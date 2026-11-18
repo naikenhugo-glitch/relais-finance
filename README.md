@@ -2,7 +2,14 @@
 
 Outil simple pour suivre les achats, ventes, stock, vendeurs indépendants et la répartition des bénéfices (Essential, Ralph Lauren, Alo).
 
-## Utilisation
+## Version en ligne
+
+Après déploiement GitHub Pages :  
+[https://naikenhugo-glitch.github.io/relais-finance/](https://naikenhugo-glitch.github.io/relais-finance/)
+
+Les données restent dans **votre navigateur** (localStorage). Utilisez **Réglages → Exporter / Importer** pour sauvegarder ou partager avec votre associé.
+
+## Utilisation en local
 
 ```bash
 npm install
@@ -10,8 +17,6 @@ npm run dev
 ```
 
 Ouvrir [http://localhost:3000](http://localhost:3000).
-
-Les données sont stockées dans le navigateur (localStorage). Utilisez **Réglages → Exporter / Importer** pour sauvegarder ou partager avec votre associé.
 
 ## Sections
 
