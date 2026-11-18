@@ -101,11 +101,11 @@ export function Sales({ state, onChange }: Props) {
   return (
     <div className="fade-in">
       <section className="panel">
+        <p className="eyebrow">Étape 2 · Sorties</p>
         <h2 className="section-title">Enregistrer une vente</h2>
         <p className="section-help">
-          Vendez depuis votre stock central, ou enregistrez une vente réalisée
-          par un vendeur (il faut d’abord lui attribuer du stock dans l’onglet
-          Vendeurs).
+          Vendez depuis votre stock (après une commande), ou notez une vente
+          faite par un vendeur — après lui avoir attribué du stock.
         </p>
 
         <form onSubmit={onSubmit}>

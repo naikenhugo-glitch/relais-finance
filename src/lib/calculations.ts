@@ -5,12 +5,18 @@ import type {
   CommissionTier,
   DashboardTotals,
   ItemType,
+  PurchaseFlat,
   Sale,
   SellerStats,
   Settings,
   StockLine,
 } from "./types";
 import { BRANDS, ITEM_TYPES } from "./types";
+import { flattenOrders } from "./orders";
+
+function purchasesOf(state: AppState): PurchaseFlat[] {
+  return flattenOrders(state.orders);
+}
 
 export function getCommissionRate(
   unitsSold: number,
@@ -29,7 +35,7 @@ function avgBuyFromPurchases(
   brand: Brand,
   type: ItemType,
 ): number {
-  const lines = state.purchases.filter(
+  const lines = purchasesOf(state).filter(
     (p) => p.brand === brand && p.type === type,
   );
   const qty = lines.reduce((s, p) => s + p.quantity, 0);
@@ -41,11 +47,12 @@ function avgBuyFromPurchases(
 }
 
 export function computeStock(state: AppState): StockLine[] {
+  const purchases = purchasesOf(state);
   const lines: StockLine[] = [];
 
   for (const brand of BRANDS) {
     for (const { value: type } of ITEM_TYPES) {
-      const bought = state.purchases
+      const bought = purchases
         .filter((p) => p.brand === brand && p.type === type)
         .reduce((s, p) => s + p.quantity, 0);
 
@@ -191,12 +198,13 @@ export function computeSellerStats(state: AppState): SellerStats[] {
 }
 
 export function computeDashboard(state: AppState): DashboardTotals {
-  const purchaseTotal = state.purchases.reduce(
+  const purchases = purchasesOf(state);
+  const purchaseTotal = purchases.reduce(
     (s, p) => s + p.quantity * p.unitBuyPrice,
     0,
   );
-  const shippingTotal = state.purchases.reduce(
-    (s, p) => s + p.shippingCost,
+  const shippingTotal = state.orders.reduce(
+    (s, o) => s + (Number(o.shippingCost) || 0),
     0,
   );
   const revenueTotal = state.sales.reduce(
@@ -216,15 +224,13 @@ export function computeDashboard(state: AppState): DashboardTotals {
     .reduce((s, sale) => s + sale.quantity * sale.unitSalePrice, 0);
   const sellerRevenue = revenueTotal - ownRevenue;
 
-  const itemsBought = state.purchases.reduce((s, p) => s + p.quantity, 0);
+  const itemsBought = purchases.reduce((s, p) => s + p.quantity, 0);
   const itemsSold = state.sales.reduce((s, sale) => s + sale.quantity, 0);
 
   const stock = computeStock(state);
   const stockRemaining = stock.reduce((s, l) => s + l.totalRemaining, 0);
   const stockValue = stock.reduce((s, l) => s + l.valueRemaining, 0);
 
-  // Bénéfice net = CA - coût des articles vendus - livraison - commissions
-  // (le stock restant n'est pas une perte)
   const netProfit =
     revenueTotal - soldBuyCost - shippingTotal - commissionTotal;
 
@@ -268,14 +274,19 @@ export function suggestSellPrice(settings: Settings, type: ItemType): number {
   return settings.defaultSellPrices[type];
 }
 
-export function validatePurchaseQuantity(qty: number): string | null {
+export function validateOrderQuantity(qty: number): string | null {
   if (!Number.isFinite(qty) || qty < 1) {
-    return "La quantité doit être au moins 1.";
+    return "Ajoutez au moins un article dans la commande.";
   }
   if (qty < 5) {
-    return "Le fournisseur exige un minimum de 5 articles par commande.";
+    return "Le fournisseur exige un minimum de 5 articles au total par commande.";
   }
   return null;
+}
+
+/** @deprecated use validateOrderQuantity */
+export function validatePurchaseQuantity(qty: number): string | null {
+  return validateOrderQuantity(qty);
 }
 
 export function allocationCostBasis(
@@ -283,7 +294,7 @@ export function allocationCostBasis(
   brand: Brand,
   type: ItemType,
 ): { unitBuyPrice: number; unitSellPrice: number } {
-  const purchases = state.purchases.filter(
+  const purchases = purchasesOf(state).filter(
     (p) => p.brand === brand && p.type === type,
   );
   if (purchases.length === 0) {
@@ -304,7 +315,10 @@ export function summarizeAllocationStock(
   sales: Sale[],
   sellerId: string,
 ): { brand: Brand; type: ItemType; remaining: number }[] {
-  const map = new Map<string, { brand: Brand; type: ItemType; remaining: number }>();
+  const map = new Map<
+    string,
+    { brand: Brand; type: ItemType; remaining: number }
+  >();
 
   for (const a of allocations.filter((x) => x.sellerId === sellerId)) {
     const key = `${a.brand}|${a.type}`;

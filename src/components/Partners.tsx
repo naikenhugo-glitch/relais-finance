@@ -34,11 +34,12 @@ export function Partners({ state, onSettings }: Props) {
   return (
     <div className="fade-in">
       <section className="panel">
+        <p className="eyebrow">Étape 3 · Partage</p>
         <h2 className="section-title">Répartition entre associés</h2>
         <p className="section-help">
-          Par défaut 50/50. Ajustez les pourcentages : la somme est maintenue
-          à 100 %. Le calcul part du bénéfice net (après achats vendus,
-          livraisons et commissions vendeurs).
+          Par défaut 50/50. Modifiez les noms et pourcentages : le bénéfice net
+          (après achats vendus, livraisons et commissions) est partagé
+          automatiquement.
         </p>
 
         <div className="form-grid cols-2">

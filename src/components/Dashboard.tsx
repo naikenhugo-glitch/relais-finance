@@ -9,35 +9,60 @@ import {
 import { euro, itemLabel, percent } from "@/lib/defaults";
 import type { AppState } from "@/lib/types";
 
-export function Dashboard({ state }: { state: AppState }) {
+type NavId =
+  | "dashboard"
+  | "purchases"
+  | "sales"
+  | "sellers"
+  | "partners"
+  | "settings";
+
+export function Dashboard({
+  state,
+  onNavigate,
+}: {
+  state: AppState;
+  onNavigate?: (id: NavId) => void;
+}) {
   const totals = computeDashboard(state);
   const stock = computeStock(state);
   const sellers = computeSellerStats(state);
   const shares = partnerShares(totals.netProfit, state.settings);
   const empty =
-    state.purchases.length === 0 &&
+    state.orders.length === 0 &&
     state.sales.length === 0 &&
     state.sellers.length === 0;
 
   return (
     <div className="fade-in">
-      <section className="panel">
-        <h2 className="section-title">Tableau de bord</h2>
+      <section className="panel hero-panel">
+        <p className="eyebrow">Suivi</p>
+        <h2 className="section-title">Vue d’ensemble</h2>
         <p className="section-help">
-          Vue d’ensemble de votre activité. Les totaux se mettent à jour
-          automatiquement dès que vous ajoutez un achat, une vente ou un
-          vendeur.
+          Ici, tout se calcule tout seul à partir de vos commandes, ventes et
+          commissions. Aucun chiffre n’est inventé.
         </p>
 
         {empty ? (
-          <div className="empty">
-            Aucune donnée pour l’instant. Commencez par enregistrer une
-            commande fournisseur dans l’onglet <strong>Achats</strong>.
+          <div className="empty start-empty">
+            <p>
+              Relais est vide pour l’instant — c’est normal. Commencez par votre
+              première commande fournisseur.
+            </p>
+            {onNavigate && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => onNavigate("purchases")}
+              >
+                Enregistrer une commande
+              </button>
+            )}
           </div>
         ) : (
           <>
             <div className="kpi-grid">
-              <div className="kpi">
+              <div className="kpi accent">
                 <span className="kpi-label">Chiffre d’affaires</span>
                 <div className="kpi-value">{euro(totals.revenueTotal)}</div>
               </div>
@@ -98,11 +123,10 @@ export function Dashboard({ state }: { state: AppState }) {
       </section>
 
       <section className="panel">
-        <h2 className="section-title">Répartition associés</h2>
+        <h2 className="section-title">Parts des associés</h2>
         <p className="section-help">
-          Après déduction des achats vendus, livraisons et commissions, voici
-          la part de chacun ({state.settings.partnerAPercent}/
-          {state.settings.partnerBPercent}).
+          Après dépenses et commissions : répartition{" "}
+          {state.settings.partnerAPercent}/{state.settings.partnerBPercent}.
         </p>
         <div className="kpi-grid">
           <div className="kpi">
@@ -114,13 +138,23 @@ export function Dashboard({ state }: { state: AppState }) {
             <div className="kpi-value">{euro(shares.b)}</div>
           </div>
         </div>
+        {onNavigate && (
+          <div className="actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => onNavigate("partners")}
+            >
+              Modifier la répartition
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="panel">
-        <h2 className="section-title">Stock</h2>
+        <h2 className="section-title">Stock disponible</h2>
         <p className="section-help">
-          Stock central (chez vous) et stock chez les vendeurs, valorisé au
-          prix d’achat moyen.
+          Chez vous + chez les vendeurs, valorisé au prix d’achat moyen.
         </p>
         {stock.length === 0 ? (
           <div className="empty">Aucun mouvement de stock.</div>
@@ -159,12 +193,27 @@ export function Dashboard({ state }: { state: AppState }) {
       </section>
 
       <section className="panel">
-        <h2 className="section-title">Performance vendeurs</h2>
+        <h2 className="section-title">Performance des vendeurs</h2>
         <p className="section-help">
-          Résultats consolidés de chaque vendeur indépendant.
+          CA, rémunération et bénéfice restant pour votre business.
         </p>
         {sellers.length === 0 ? (
-          <div className="empty">Aucun vendeur enregistré.</div>
+          <div className="empty">
+            Aucun vendeur pour le moment.
+            {onNavigate && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ marginTop: 12 }}
+                  onClick={() => onNavigate("sellers")}
+                >
+                  Ajouter un vendeur
+                </button>
+              </>
+            )}
+          </div>
         ) : (
           <div className="table-wrap">
             <table className="data">

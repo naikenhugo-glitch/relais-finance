@@ -20,11 +20,11 @@ Ouvrir [http://localhost:3000](http://localhost:3000).
 
 ## Sections
 
-1. **Tableau de bord** — CA, achats, livraisons, commissions, bénéfice net, stock
-2. **Achats** — commandes fournisseur (min. 5 articles)
+1. **Vue d’ensemble** — CA, achats, livraisons, commissions, bénéfice net, stock
+2. **Commandes** — achats fournisseur multi-marques (min. 5 articles au total)
 3. **Ventes** — ventes propres ou via vendeurs
 4. **Vendeurs** — stock attribué, commissions progressives
 5. **Associés** — répartition des bénéfices (50/50 par défaut)
-6. **Réglages** — prix, paliers de commission, sauvegarde
+6. **Paramètres** — prix, paliers de commission, sauvegarde
 
 Aucune donnée fictive n’est préchargée.

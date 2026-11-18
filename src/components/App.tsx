@@ -10,12 +10,42 @@ import { Sellers } from "./Sellers";
 import { SettingsPanel } from "./SettingsPanel";
 
 const TABS = [
-  { id: "dashboard", label: "Tableau de bord" },
-  { id: "purchases", label: "Achats" },
-  { id: "sales", label: "Ventes" },
-  { id: "sellers", label: "Vendeurs" },
-  { id: "partners", label: "Associés" },
-  { id: "settings", label: "Réglages" },
+  {
+    id: "dashboard",
+    label: "Vue d’ensemble",
+    hint: "Résultats",
+    group: "Suivi",
+  },
+  {
+    id: "purchases",
+    label: "Commandes",
+    hint: "Achats fournisseur",
+    group: "Activité",
+  },
+  {
+    id: "sales",
+    label: "Ventes",
+    hint: "Sorties de stock",
+    group: "Activité",
+  },
+  {
+    id: "sellers",
+    label: "Vendeurs",
+    hint: "Stock & commissions",
+    group: "Activité",
+  },
+  {
+    id: "partners",
+    label: "Associés",
+    hint: "Partage des bénéfices",
+    group: "Réglages",
+  },
+  {
+    id: "settings",
+    label: "Paramètres",
+    hint: "Prix & sauvegarde",
+    group: "Réglages",
+  },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -34,41 +64,54 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <header className="hero-row">
-        <div>
-          <div className="brand-mark">
+      <header className="site-hero">
+        <div className="hero-copy">
+          <p className="brand-kicker">Achat-revente · Essential · Ralph Lauren · Alo</p>
+          <h1 className="brand-mark">
             Relais<span>.</span>
-          </div>
-          <p className="lead" style={{ marginTop: 12, marginBottom: 0 }}>
-            Gestion financière pour votre activité d’achat-revente —
-            Essential, Ralph Lauren, Alo. Achats, stock, vendeurs et bénéfices
-            au même endroit.
+          </h1>
+          <p className="lead">
+            Votre tableau de bord financier : commandes fournisseur, stock,
+            vendeurs et bénéfices — calculés automatiquement.
           </p>
         </div>
-        <aside className="mini-note">
-          Tout démarre vide. Ajoutez vos commandes et ventes au fil de l’eau —
-          les calculs se mettent à jour seuls.
-        </aside>
+        <ol className="flow-steps" aria-label="Comment utiliser Relais">
+          <li>
+            <strong>1. Commandes</strong>
+            <span>Enregistrez un achat (plusieurs marques possibles).</span>
+          </li>
+          <li>
+            <strong>2. Ventes / Vendeurs</strong>
+            <span>Vendez vous-même ou attribuez du stock.</span>
+          </li>
+          <li>
+            <strong>3. Vue d’ensemble</strong>
+            <span>Suivez CA, bénéfice et parts associés.</span>
+          </li>
+        </ol>
       </header>
 
       {!ready ? (
         <p className="lead">Chargement de vos données…</p>
       ) : (
         <>
-          <nav className="nav-tabs" aria-label="Sections">
+          <nav className="nav-rail" aria-label="Sections">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                className={`nav-tab ${tab === t.id ? "active" : ""}`}
+                className={`nav-item ${tab === t.id ? "active" : ""}`}
                 onClick={() => setTab(t.id)}
               >
-                {t.label}
+                <span className="nav-item-label">{t.label}</span>
+                <span className="nav-item-hint">{t.hint}</span>
               </button>
             ))}
           </nav>
 
-          {tab === "dashboard" && <Dashboard state={state} />}
+          {tab === "dashboard" && (
+            <Dashboard state={state} onNavigate={(id) => setTab(id)} />
+          )}
           {tab === "purchases" && <Purchases state={state} onChange={update} />}
           {tab === "sales" && <Sales state={state} onChange={update} />}
           {tab === "sellers" && <Sellers state={state} onChange={update} />}

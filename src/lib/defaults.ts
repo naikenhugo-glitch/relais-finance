@@ -39,8 +39,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export function createEmptyState(): AppState {
   return {
-    version: 1,
-    purchases: [],
+    version: 2,
+    orders: [],
     sellers: [],
     allocations: [],
     sales: [],

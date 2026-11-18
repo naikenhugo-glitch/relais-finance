@@ -8,8 +8,28 @@ export const ITEM_TYPES: { value: ItemType; label: string }[] = [
   { value: "ensemble", label: "Ensemble" },
 ];
 
-export interface Purchase {
+/** Une ligne d'article dans une commande fournisseur */
+export interface OrderLine {
   id: string;
+  brand: Brand;
+  type: ItemType;
+  quantity: number;
+  unitBuyPrice: number;
+  unitSellPrice: number;
+}
+
+/** Une commande fournisseur (plusieurs marques / types possibles) */
+export interface Order {
+  id: string;
+  date: string;
+  shippingCost: number;
+  lines: OrderLine[];
+}
+
+/** Format aplati utilisé par les calculs de stock */
+export interface PurchaseFlat {
+  id: string;
+  orderId: string;
   date: string;
   brand: Brand;
   type: ItemType;
@@ -61,23 +81,38 @@ export interface Settings {
   partnerBPercent: number;
   defaultBuyPrices: Record<ItemType, number>;
   defaultSellPrices: Record<ItemType, number>;
-  /** Commission en % du chiffre d'affaires du vendeur */
   commissionBase: "ca" | "marge";
   commissionTiers: CommissionTier[];
 }
 
 export interface AppState {
-  version: 1;
-  purchases: Purchase[];
+  version: 2;
+  orders: Order[];
   sellers: Seller[];
   allocations: Allocation[];
   sales: Sale[];
   settings: Settings;
 }
 
-export interface StockKey {
+/** Ancien format v1 (migration) */
+export interface LegacyPurchase {
+  id: string;
+  date: string;
   brand: Brand;
   type: ItemType;
+  quantity: number;
+  unitBuyPrice: number;
+  shippingCost: number;
+  unitSellPrice: number;
+}
+
+export interface LegacyAppState {
+  version: 1;
+  purchases: LegacyPurchase[];
+  sellers: Seller[];
+  allocations: Allocation[];
+  sales: Sale[];
+  settings: Settings;
 }
 
 export interface StockLine {

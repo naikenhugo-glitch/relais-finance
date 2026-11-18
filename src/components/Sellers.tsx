@@ -117,10 +117,11 @@ export function Sellers({ state, onChange }: Props) {
   return (
     <div className="fade-in">
       <section className="panel">
+        <p className="eyebrow">Étape 2 · Réseau</p>
         <h2 className="section-title">Vendeurs indépendants</h2>
         <p className="section-help">
-          Ajoutez des vendeurs dans différentes villes, attribuez-leur une
-          partie du stock, puis suivez leurs ventes et leur rémunération.
+          Ajoutez un vendeur (ville), donnez-lui une partie du stock, puis
+          suivez ses ventes et sa commission automatique.
         </p>
 
         <div className="split-grid">

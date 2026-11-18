@@ -2,47 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createEmptyState, STORAGE_KEY } from "./defaults";
+import { normalizeState } from "./orders";
 import type { AppState, Settings } from "./types";
-
-function isAppState(value: unknown): value is AppState {
-  if (!value || typeof value !== "object") return false;
-  const v = value as AppState;
-  return (
-    v.version === 1 &&
-    Array.isArray(v.purchases) &&
-    Array.isArray(v.sellers) &&
-    Array.isArray(v.allocations) &&
-    Array.isArray(v.sales) &&
-    !!v.settings
-  );
-}
 
 function loadState(): AppState {
   if (typeof window === "undefined") return createEmptyState();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return createEmptyState();
-    const parsed: unknown = JSON.parse(raw);
-    if (!isAppState(parsed)) return createEmptyState();
-    return {
-      ...parsed,
-      settings: {
-        ...createEmptyState().settings,
-        ...parsed.settings,
-        defaultBuyPrices: {
-          ...createEmptyState().settings.defaultBuyPrices,
-          ...parsed.settings.defaultBuyPrices,
-        },
-        defaultSellPrices: {
-          ...createEmptyState().settings.defaultSellPrices,
-          ...parsed.settings.defaultSellPrices,
-        },
-        commissionTiers:
-          parsed.settings.commissionTiers?.length > 0
-            ? parsed.settings.commissionTiers
-            : createEmptyState().settings.commissionTiers,
-      },
-    };
+    return normalizeState(JSON.parse(raw), createEmptyState());
   } catch {
     return createEmptyState();
   }
@@ -94,11 +62,10 @@ export function useAppState() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const parsed: unknown = JSON.parse(String(reader.result));
-        if (!isAppState(parsed)) {
-          window.alert("Fichier invalide.");
-          return;
-        }
+        const parsed = normalizeState(
+          JSON.parse(String(reader.result)),
+          createEmptyState(),
+        );
         setState(parsed);
       } catch {
         window.alert("Impossible de lire ce fichier.");
