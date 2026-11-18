@@ -44,7 +44,7 @@ export function createEmptyState(): AppState {
     sellers: [],
     allocations: [],
     sales: [],
-    settings: structuredClone(DEFAULT_SETTINGS),
+    settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as Settings,
   };
 }
 

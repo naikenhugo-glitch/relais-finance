@@ -32,14 +32,6 @@ export function App() {
   } = useAppState();
   const [tab, setTab] = useState<TabId>("dashboard");
 
-  if (!ready) {
-    return (
-      <div className="app-shell">
-        <p className="lead">Chargement…</p>
-      </div>
-    );
-  }
-
   return (
     <div className="app-shell">
       <header className="hero-row">
@@ -59,34 +51,40 @@ export function App() {
         </aside>
       </header>
 
-      <nav className="nav-tabs" aria-label="Sections">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`nav-tab ${tab === t.id ? "active" : ""}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+      {!ready ? (
+        <p className="lead">Chargement de vos données…</p>
+      ) : (
+        <>
+          <nav className="nav-tabs" aria-label="Sections">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`nav-tab ${tab === t.id ? "active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
 
-      {tab === "dashboard" && <Dashboard state={state} />}
-      {tab === "purchases" && <Purchases state={state} onChange={update} />}
-      {tab === "sales" && <Sales state={state} onChange={update} />}
-      {tab === "sellers" && <Sellers state={state} onChange={update} />}
-      {tab === "partners" && (
-        <Partners state={state} onSettings={updateSettings} />
-      )}
-      {tab === "settings" && (
-        <SettingsPanel
-          state={state}
-          onSettings={updateSettings}
-          onExport={exportJson}
-          onImport={importJson}
-          onReset={resetAll}
-        />
+          {tab === "dashboard" && <Dashboard state={state} />}
+          {tab === "purchases" && <Purchases state={state} onChange={update} />}
+          {tab === "sales" && <Sales state={state} onChange={update} />}
+          {tab === "sellers" && <Sellers state={state} onChange={update} />}
+          {tab === "partners" && (
+            <Partners state={state} onSettings={updateSettings} />
+          )}
+          {tab === "settings" && (
+            <SettingsPanel
+              state={state}
+              onSettings={updateSettings}
+              onExport={exportJson}
+              onImport={importJson}
+              onReset={resetAll}
+            />
+          )}
+        </>
       )}
     </div>
   );
