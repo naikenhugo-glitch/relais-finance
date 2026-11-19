@@ -1,22 +1,17 @@
 # Relais — gestion financière achat-revente
 
-Outil simple pour suivre les achats, ventes, stock, vendeurs indépendants et la répartition des bénéfices (Essential, Ralph Lauren, Alo).
+## Ouvrir l’outil (lien direct)
 
-## Version en ligne
+👉 **[Lancer l’outil dans le navigateur](https://naikenhugo-glitch.github.io/relais-finance/outil.html)**  
+(téléphone et ordinateur — aucune installation)
 
-Après déploiement GitHub Pages :  
-[https://naikenhugo-glitch.github.io/relais-finance/](https://naikenhugo-glitch.github.io/relais-finance/)
+Autres liens utiles :
+- Version app (Next) : [https://naikenhugo-glitch.github.io/relais-finance/](https://naikenhugo-glitch.github.io/relais-finance/)
+- Fichier sur GitHub : [gestion-achat-revente.html](./gestion-achat-revente.html)
 
-Les données restent dans **votre navigateur** (localStorage). Utilisez **Réglages → Exporter / Importer** pour sauvegarder ou partager avec votre associé.
+Les données restent dans **votre navigateur** (localStorage). Utilisez **Exporter / Importer** pour sauvegarder.
 
-## Utilisation en local
-
-```bash
-npm install
-npm run dev
-```
-
-Ouvrir [http://localhost:3000](http://localhost:3000).
+---
 
 ## Sections
 
