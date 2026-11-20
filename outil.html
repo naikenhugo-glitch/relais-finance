@@ -1,0 +1,3371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relais — Gestion achat-revente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #0e1620;
+  --ink-soft: #3a4a5a;
+  --muted: #6a7a8a;
+  --paper: #f3f6f8;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-solid: #ffffff;
+  --line: rgba(14, 22, 32, 0.08);
+  --accent: #0f6b63;
+  --accent-deep: #0a4f4a;
+  --accent-soft: #d7efe9;
+  --navy: #132536;
+  --navy-2: #1c3a4f;
+  --gold: #b08a45;
+  --gain: #147a52;
+  --gain-bg: #e5f6ee;
+  --loss: #a83232;
+  --loss-bg: #f9e8e8;
+  --warn: #8a6a1f;
+  --warn-bg: #f8f1dc;
+  --radius: 18px;
+  --shadow: 0 18px 50px rgba(14, 22, 32, 0.08);
+  --shadow-sm: 0 8px 24px rgba(14, 22, 32, 0.05);
+  --font: "Outfit", "Segoe UI", sans-serif;
+  --display: "Fraunces", Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 15.5px; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  line-height: 1.5;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 90% 55% at 8% -5%, #cfe8e2 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, #d5e2ef 0%, transparent 50%),
+    linear-gradient(165deg, #f5f7f9 0%, #e8eef3 45%, #e6f1ec 100%);
+  background-attachment: fixed;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+  z-index: 0;
+}
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(180deg, rgba(19,37,54,0.96), rgba(19,37,54,0.9));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0.95rem 1.2rem;
+  color: #eef4f8;
+}
+.app-header-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 1.1rem;
+  justify-content: space-between;
+}
+.brand {
+  font-family: var(--display);
+  font-size: clamp(1.45rem, 3vw, 1.85rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #f4faf8;
+  line-height: 1;
+}
+.brand span { color: #7fd4c4; }
+.brand-sub {
+  display: block;
+  margin-top: 0.28rem;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(238,244,248,0.62);
+}
+.header-actions { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.header-actions .btn {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+  color: #eef4f8;
+}
+.header-actions .btn:hover { background: rgba(255,255,255,0.12); }
+.header-actions .btn-danger {
+  background: rgba(168,50,50,0.18);
+  border-color: rgba(240,180,180,0.35);
+  color: #ffd4d4;
+}
+
+.hero-strip {
+  max-width: 1140px;
+  margin: 1.1rem auto 0;
+  padding: 0 1.2rem;
+  position: relative;
+  z-index: 1;
+  animation: rise 0.45s ease both;
+}
+.hero-strip-inner {
+  display: grid;
+  gap: 1rem;
+  padding: 1.35rem 1.4rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35)),
+    linear-gradient(120deg, #e7f4f0, #e8eef5);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: var(--shadow);
+}
+@media (min-width: 860px) {
+  .hero-strip-inner {
+    grid-template-columns: 1.3fr 0.9fr;
+    align-items: center;
+  }
+}
+.hero-strip h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.7rem, 3.5vw, 2.35rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.hero-strip p {
+  margin: 0.55rem 0 0;
+  color: var(--ink-soft);
+  max-width: 36rem;
+}
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+}
+.hero-pills span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(15,107,99,0.1);
+  color: var(--accent-deep);
+  border: 1px solid rgba(15,107,99,0.12);
+}
+.hero-steps {
+  list-style: none;
+  margin: 0;
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #132536 0%, #1a3d48 55%, #0f554c 100%);
+  color: #eaf3f7;
+  display: grid;
+  gap: 0.75rem;
+}
+.hero-steps li { display: grid; gap: 0.1rem; }
+.hero-steps strong {
+  font-family: var(--display);
+  font-weight: 550;
+  font-size: 1.05rem;
+}
+.hero-steps span { color: rgba(234,243,247,0.72); font-size: 0.88rem; }
+
+.tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.95rem 1.2rem 0.25rem;
+  max-width: 1140px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.tab-btn {
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.45);
+  padding: 0.65rem 0.95rem;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease, border-color 0.18s ease;
+}
+.tab-btn:hover {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+.tab-btn.active {
+  color: #f4fffb;
+  background: linear-gradient(135deg, var(--accent), #145f75);
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(15,107,99,0.25);
+}
+
+main {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 1rem 1.2rem 3.5rem;
+  position: relative;
+  z-index: 1;
+}
+.panel { display: none; animation: rise 0.35s ease both; }
+.panel.active { display: block; }
+.section-intro {
+  color: var(--ink-soft);
+  margin: 0 0 1.1rem;
+  max-width: 44rem;
+  font-size: 1.02rem;
+}
+.card {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.15rem 1.2rem;
+  margin-bottom: 1rem;
+}
+.card h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+.card h3 {
+  margin: 0.85rem 0 0.55rem;
+  font-family: var(--display);
+  font-size: 1.08rem;
+  font-weight: 550;
+}
+.grid-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+.kpi {
+  background: linear-gradient(180deg, #fff 0%, #f4f8fb 100%);
+  border-radius: 14px;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid var(--line);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.kpi .label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+.kpi .value {
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+.kpi.gain .value { color: var(--gain); }
+.kpi.loss .value { color: var(--loss); }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+.field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.field label {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: help;
+  position: relative;
+}
+.hint::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  width: max-content;
+  max-width: 220px;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  z-index: 50;
+  line-height: 1.3;
+}
+.hint:hover::after, .hint:focus::after { opacity: 1; }
+.field-help {
+  font-size: 0.84rem;
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+}
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.62rem 0.75rem;
+  background: var(--surface-solid);
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15,107,99,0.15);
+}
+textarea { min-height: 64px; resize: vertical; }
+.btn {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.58rem 0.95rem;
+  cursor: pointer;
+  font-weight: 650;
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #145f75);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 22px rgba(15,107,99,0.22);
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-danger { background: var(--loss-bg); color: var(--loss); border-color: #efc4c4; }
+.btn-ghost { background: transparent; }
+.btn-sm { padding: 0.35rem 0.65rem; font-size: 0.82rem; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.95rem; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+th, td {
+  text-align: left;
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 700;
+  background: #eef3f7;
+}
+tr:hover td { background: rgba(255,255,255,0.55); }
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.65);
+}
+.money-pos { color: var(--gain); font-weight: 650; }
+.money-neg { color: var(--loss); font-weight: 650; }
+.badge {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.badge-ok { background: var(--gain-bg); color: var(--gain); }
+.badge-warn { background: var(--warn-bg); color: var(--warn); }
+.badge-danger { background: var(--loss-bg); color: var(--loss); }
+.badge-muted { background: #eef2f5; color: var(--muted); }
+.alert {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  margin: 0.65rem 0;
+  font-size: 0.9rem;
+}
+.alert-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #ead9a0; }
+.alert-danger { background: var(--loss-bg); color: var(--loss); border: 1px solid #efc4c4; }
+.alert-info { background: var(--accent-soft); color: var(--accent-deep); border: 1px solid #b7ddd5; }
+.line-rows { display: flex; flex-direction: column; gap: 0.6rem; }
+.line-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.7fr 0.9fr auto;
+  gap: 0.5rem;
+  align-items: end;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: rgba(236, 242, 246, 0.7);
+  border: 1px solid var(--line);
+}
+@media (max-width: 720px) {
+  .line-row { grid-template-columns: 1fr 1fr; }
+}
+.progress {
+  height: 8px;
+  background: #dbe3ea;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #1f7a8c);
+  border-radius: 999px;
+  min-width: 0;
+}
+.progress.danger > span { background: var(--loss); }
+.muted { color: var(--muted); }
+.empty {
+  text-align: center;
+  padding: 1.6rem 0.9rem;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.4);
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 22, 32, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 18px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 1.2rem;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+}
+.modal h3 {
+  margin-top: 0;
+  font-family: var(--display);
+}
+.stack { display: flex; flex-direction: column; gap: 0.75rem; }
+.inline-checks { display: flex; flex-wrap: wrap; gap: 0.75rem 1.1rem; align-items: center; }
+.inline-checks label { display: flex; align-items: center; gap: 0.35rem; font-weight: 500; font-size: 0.9rem; }
+.subcard {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: linear-gradient(180deg, #fff, #f5f8fb);
+}
+.def-list { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.9rem; }
+.def-list li { margin-bottom: 0.3rem; }
+.toast {
+  position: fixed;
+  bottom: 1.1rem;
+  right: 1.1rem;
+  background: var(--navy);
+  color: #fff;
+  padding: 0.8rem 1.05rem;
+  border-radius: 12px;
+  z-index: 120;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  transform: translateY(6px);
+  max-width: min(90vw, 340px);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.city-group { margin-top: 0.9rem; }
+.city-group h4 {
+  margin: 0 0 0.4rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  color: var(--accent-deep);
+}
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  border: 0;
+}
+
+.envelope-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+@media (min-width: 720px) {
+  .envelope-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.envelope-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.05rem 1rem 1rem;
+  background: linear-gradient(165deg, #fff 0%, #f3f7fa 100%);
+  box-shadow: var(--shadow-sm);
+}
+.envelope-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--accent), #1f7a8c);
+}
+.envelope-card.locked {
+  background: linear-gradient(165deg, #f2f5f8 0%, #e7edf2 100%);
+}
+.envelope-card.locked::before {
+  background: linear-gradient(180deg, #5d7184, #314859);
+}
+.envelope-card h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--display);
+  font-size: 1.08rem;
+  font-weight: 550;
+}
+.envelope-card .amt {
+  font-family: var(--display);
+  font-size: 1.7rem;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.envelope-card .tag {
+  display: inline-block;
+  margin-top: 0.45rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+}
+.envelope-card.locked .tag {
+  background: #dbe3ea;
+  color: #3d5163;
+}
+.chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: linear-gradient(180deg, #fff, #f4f8fb);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.65rem;
+}
+.chart-wrap svg { display: block; width: 100%; max-width: 720px; height: 180px; }
+.ledger-filters { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.85rem; }
+.ledger-filters button.active {
+  background: linear-gradient(135deg, var(--accent), #145f75);
+  color: #fff;
+  border-color: transparent;
+}
+.alert-box {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid #ead9a0;
+  font-size: 0.9rem;
+}
+.alert-box.error {
+  background: var(--loss-bg);
+  color: var(--loss);
+  border-color: #efc4c4;
+}
+.alert-box.ok {
+  background: var(--gain-bg);
+  color: var(--gain);
+  border-color: #b7e0c8;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-header-inner">
+    <div class="brand">Relais<span>.</span><span class="brand-sub">Achat-revente · Essential · Ralph Lauren · Alo</span></div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-sm" id="btnExport" title="Télécharger un fichier JSON de sauvegarde">Exporter</button>
+      <button type="button" class="btn btn-sm" id="btnImport" title="Charger un fichier JSON">Importer</button>
+      <button type="button" class="btn btn-sm btn-danger" id="btnReset">Réinitialiser</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="sr-only">
+    </div>
+  </div>
+</header>
+
+<section class="hero-strip" aria-label="Présentation">
+  <div class="hero-strip-inner">
+    <div>
+      <h1>Votre cockpit financier, clair et maîtrisé.</h1>
+      <p>Commandes, stock, vendeurs, bénéfices et épargne — dans une interface pensé pour décider vite, sans tableur.</p>
+      <div class="hero-pills">
+        <span>Calculs automatiques</span>
+        <span>Multi-marques</span>
+        <span>Épargne séparée</span>
+      </div>
+    </div>
+    <ol class="hero-steps">
+      <li><strong>1. Commandes</strong><span>Enregistrez vos achats fournisseur.</span></li>
+      <li><strong>2. Ventes & vendeurs</strong><span>Suivez le stock et les commissions.</span></li>
+      <li><strong>3. Répartition</strong><span>Alimentez épargne, réinvestissement et libre.</span></li>
+    </ol>
+  </div>
+</section>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button type="button" class="tab-btn active" data-tab="dashboard">Tableau de bord</button>
+  <button type="button" class="tab-btn" data-tab="purchases">Achats</button>
+  <button type="button" class="tab-btn" data-tab="stock">Stock</button>
+  <button type="button" class="tab-btn" data-tab="sales">Ventes</button>
+  <button type="button" class="tab-btn" data-tab="sellers">Vendeurs</button>
+  <button type="button" class="tab-btn" data-tab="partners">Associés</button>
+  <button type="button" class="tab-btn" data-tab="distribution">Répartition &amp; épargne</button>
+  <button type="button" class="tab-btn" data-tab="settings">Paramètres</button>
+</nav>
+
+<main>
+  <!-- DASHBOARD -->
+  <section id="panel-dashboard" class="panel active" role="tabpanel">
+    <p class="section-intro">Vue d’ensemble de votre activité : chiffres clés, trésorerie et comparaison des vendeurs et des marques. Filtrez par période pour affiner l’analyse.</p>
+    <div class="card">
+      <h2>Période</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>Filtre <span class="hint" data-tip="Applique le filtre aux ventes et aux commissions liées ; les achats et le stock restent sur toute la période sauf indication.">?</span></label>
+          <select id="dashPeriod">
+            <option value="all">Tout</option>
+            <option value="thisMonth">Ce mois</option>
+            <option value="lastMonth">Mois précédent</option>
+            <option value="custom">Dates personnalisées</option>
+          </select>
+        </div>
+        <div class="field" id="dashFromWrap" hidden>
+          <label>Du</label>
+          <input type="date" id="dashFrom">
+        </div>
+        <div class="field" id="dashToWrap" hidden>
+          <label>Au</label>
+          <input type="date" id="dashTo">
+        </div>
+      </div>
+      <ul class="def-list" style="margin-top:0.75rem">
+        <li><strong>Bénéfice net</strong> = chiffre d’affaires − coût de revient des articles vendus (achat + part de livraison) − frais de plateforme − commissions − pertes.</li>
+        <li><strong>Marge nette %</strong> = bénéfice net / chiffre d’affaires.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Chiffres clés</h2>
+      <div class="grid-kpi" id="dashKpis"></div>
+    </div>
+    <div class="card">
+      <h2>Trésorerie</h2>
+      <p class="field-help">L’argent réellement sorti et entré, distinct du bénéfice comptable.</p>
+      <div class="grid-kpi" id="dashCash"></div>
+    </div>
+    <div class="card">
+      <h2>Comparatif vendeurs</h2>
+      <div class="table-wrap" id="dashSellersTable"></div>
+    </div>
+    <div class="card">
+      <h2>Résultats par marque</h2>
+      <div class="table-wrap" id="dashBrandsTable"></div>
+    </div>
+  </section>
+
+  <!-- PURCHASES -->
+  <section id="panel-purchases" class="panel" role="tabpanel">
+    <p class="section-intro">Enregistrez vos commandes fournisseur. Les frais de livraison sont répartis au prorata du nombre d’articles. Un ensemble compte pour 1 haut + 1 bas dans le stock.</p>
+    <div class="card">
+      <h2 id="purchaseFormTitle">Nouvelle commande</h2>
+      <form id="purchaseForm" class="stack">
+        <input type="hidden" id="purchaseEditId">
+        <div class="form-grid">
+          <div class="field">
+            <label>Date <span class="hint" data-tip="Date de la commande fournisseur.">?</span></label>
+            <input type="date" id="purchaseDate" required>
+          </div>
+          <div class="field">
+            <label>Frais de livraison (€) <span class="hint" data-tip="Montant total de livraison, réparti sur les articles au prorata des quantités.">?</span></label>
+            <input type="number" id="purchaseShipping" min="0" step="0.01" value="0">
+          </div>
+          <div class="field full">
+            <label>Note <span class="hint" data-tip="Référence fournisseur, commentaire libre…">?</span></label>
+            <textarea id="purchaseNote" placeholder="Optionnel"></textarea>
+          </div>
+        </div>
+        <div>
+          <label style="font-weight:600;font-size:0.82rem">Lignes de commande</label>
+          <p class="field-help">Minimum recommandé : <span id="minOrderHint">5</span> articles (avertissement non bloquant).</p>
+          <div class="line-rows" id="purchaseLines"></div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-sm" id="addPurchaseLine">+ Ajouter une ligne</button>
+          </div>
+          <div id="purchaseWarning"></div>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="purchaseSubmit">Enregistrer la commande</button>
+          <button type="button" class="btn" id="purchaseCancel" hidden>Annuler</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Commandes</h2>
+      <div class="table-wrap" id="purchasesTable"></div>
+    </div>
+  </section>
+
+  <!-- STOCK -->
+  <section id="panel-stock" class="panel" role="tabpanel">
+    <p class="section-intro">Suivi des quantités achetées, vendues, chez vous et chez chaque vendeur, avec la valeur au coût de revient. Enregistrez pertes, retours ou articles défectueux ici.</p>
+    <div class="card">
+      <h2>État du stock</h2>
+      <div id="stockAlerts"></div>
+      <div class="table-wrap" id="stockTable"></div>
+    </div>
+    <div class="card">
+      <h2>Perte / retour / défectueux</h2>
+      <p class="field-help">Déduit du stock (chez vous ou chez un vendeur) et compté comme perte au coût de revient.</p>
+      <form id="lossForm" class="stack">
+        <div class="form-grid">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="lossDate" required>
+          </div>
+          <div class="field">
+            <label>Marque</label>
+            <select id="lossBrand" required></select>
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select id="lossType" required>
+              <option value="haut">Haut</option>
+              <option value="bas">Bas</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Quantité</label>
+            <input type="number" id="lossQty" min="1" step="1" value="1" required>
+          </div>
+          <div class="field">
+            <label>Emplacement <span class="hint" data-tip="D’où retirer l’article.">?</span></label>
+            <select id="lossLocation" required></select>
+          </div>
+          <div class="field">
+            <label>Motif</label>
+            <select id="lossReason">
+              <option value="perte">Perte</option>
+              <option value="retour">Retour</option>
+              <option value="defectueux">Défectueux</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Commentaire</label>
+            <input type="text" id="lossNote" placeholder="Optionnel">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+      <div class="table-wrap" style="margin-top:1rem" id="lossesTable"></div>
+    </div>
+  </section>
+
+  <!-- SALES -->
+  <section id="panel-sales" class="panel" role="tabpanel">
+    <p class="section-intro">Saisissez chaque vente. La marge est calculée automatiquement (prix de vente − coût de revient). Une vente via vendeur diminue son stock attribué.</p>
+    <div class="card">
+      <h2 id="saleFormTitle">Nouvelle vente</h2>
+      <form id="saleForm" class="stack">
+        <input type="hidden" id="saleEditId">
+        <div class="form-grid">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="saleDate" required>
+          </div>
+          <div class="field">
+            <label>Marque</label>
+            <select id="saleBrand" required></select>
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select id="saleType" required>
+              <option value="haut">Haut</option>
+              <option value="bas">Bas</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Quantité</label>
+            <input type="number" id="saleQty" min="1" step="1" value="1" required>
+          </div>
+          <div class="field">
+            <label>Prix de vente unitaire (€) <span class="hint" data-tip="Prix réel encaissé ou facturé par article.">?</span></label>
+            <input type="number" id="salePrice" min="0" step="0.01" required>
+          </div>
+          <div class="field">
+            <label>Canal</label>
+            <select id="saleChannel" required>
+              <option value="direct">Vente directe</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Frais de plateforme (€) <span class="hint" data-tip="Commission Vinted, etc. Montant libre pour toute la vente.">?</span></label>
+            <input type="number" id="saleFees" min="0" step="0.01" value="0">
+          </div>
+          <div class="field">
+            <label>Statut paiement</label>
+            <select id="salePaid">
+              <option value="paid">Payé</option>
+              <option value="pending">À encaisser</option>
+            </select>
+          </div>
+        </div>
+        <div id="saleStockHint" class="alert alert-info" hidden></div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary" id="saleSubmit">Enregistrer la vente</button>
+          <button type="button" class="btn" id="saleCancel" hidden>Annuler</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Ventes</h2>
+      <div class="table-wrap" id="salesTable"></div>
+    </div>
+  </section>
+
+  <!-- SELLERS -->
+  <section id="panel-sellers" class="panel" role="tabpanel">
+    <p class="section-intro">Gérez vos vendeurs indépendants : stock attribué, ventes, commissions (paliers progressifs sur la marge) et classement par ville.</p>
+    <div class="card">
+      <h2>Ajouter un vendeur</h2>
+      <form id="sellerForm" class="form-grid">
+        <div class="field">
+          <label>Nom</label>
+          <input type="text" id="sellerName" required placeholder="Prénom ou pseudo">
+        </div>
+        <div class="field">
+          <label>Ville</label>
+          <input type="text" id="sellerCity" required placeholder="Ville">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Ajouter</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Transfert de stock vers un vendeur</h2>
+      <p class="field-help">Déplace des articles de votre stock vers le stock attribué du vendeur.</p>
+      <form id="transferForm" class="form-grid">
+        <div class="field">
+          <label>Vendeur</label>
+          <select id="transferSeller" required></select>
+        </div>
+        <div class="field">
+          <label>Marque</label>
+          <select id="transferBrand" required></select>
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="transferType">
+            <option value="haut">Haut</option>
+            <option value="bas">Bas</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Quantité</label>
+          <input type="number" id="transferQty" min="1" step="1" value="1" required>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Transférer</button>
+        </div>
+      </form>
+      <div id="transferHint"></div>
+    </div>
+    <div class="card">
+      <h2>Paiement de commission</h2>
+      <form id="commissionPayForm" class="form-grid">
+        <div class="field">
+          <label>Vendeur</label>
+          <select id="paySeller" required></select>
+        </div>
+        <div class="field">
+          <label>Montant payé (€)</label>
+          <input type="number" id="payAmount" min="0" step="0.01" required>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="payDate" required>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Enregistrer le paiement</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Classement des vendeurs</h2>
+      <div id="sellersRanking"></div>
+    </div>
+    <div class="card">
+      <h2>Fiches vendeurs</h2>
+      <div id="sellersDetails"></div>
+    </div>
+  </section>
+
+  <!-- PARTNERS -->
+  <section id="panel-partners" class="panel" role="tabpanel">
+    <p class="section-intro">Répartition du bénéfice net entre associés, avec apports de départ et suivis des retraits déjà effectués.</p>
+    <div class="card">
+      <h2>Répartition</h2>
+      <p class="field-help">Le total des pourcentages doit être égal à 100 %.</p>
+      <div id="partnersShareAlert"></div>
+      <div class="inline-checks" style="margin-bottom:0.75rem">
+        <label>
+          <input type="checkbox" id="repayCapitalFirst">
+          Rembourser les apports avant le partage du bénéfice
+        </label>
+        <span class="hint" data-tip="Si coché, les apports restants sont remboursés en priorité sur le bénéfice net, puis le reste est partagé.">?</span>
+      </div>
+      <div id="partnersForm" class="stack"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="savePartners">Enregistrer les associés</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Répartition calculée</h2>
+      <div class="table-wrap" id="partnersResult"></div>
+    </div>
+  </section>
+
+
+  <!-- DISTRIBUTION / EPARGNE -->
+  <section id="panel-distribution" class="panel" role="tabpanel">
+    <p class="section-intro">Répartissez chaque bénéfice net en trois enveloppes séparées : <strong>Épargne</strong> (bloquée), <strong>Réinvestissement</strong> (prochaines commandes) et <strong>Argent libre</strong>. Les soldes démarrent à 0&nbsp;€. Aucune donnée fictive.</p>
+
+    <div class="card">
+      <h2>Soldes des enveloppes</h2>
+      <div class="envelope-grid" id="distBalances"></div>
+      <p class="field-help" style="margin-top:0.75rem">L’épargne n’est jamais utilisable pour des achats ni comptée dans l’argent libre. Réinvestissement et argent libre sont affichés « hors épargne ».</p>
+    </div>
+
+    <div class="card">
+      <h2>Pourcentages de répartition</h2>
+      <p class="field-help">Modifiables à tout moment. Un changement s’applique uniquement aux <strong>prochaines</strong> répartitions. La somme doit être exactement 100&nbsp;%.</p>
+      <div id="distPctAlert"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Épargne (%)</label>
+          <input type="number" id="distPctEpargne" min="0" max="100" step="0.01">
+        </div>
+        <div class="field">
+          <label>Réinvestissement (%)</label>
+          <input type="number" id="distPctReinvest" min="0" max="100" step="0.01">
+        </div>
+        <div class="field">
+          <label>Argent libre (%)</label>
+          <input type="number" id="distPctLibre" min="0" max="100" step="0.01">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="saveDistPercents">Enregistrer les pourcentages</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Répartir un bénéfice</h2>
+      <p class="field-help">Action explicite uniquement. Chaque bénéfice (identifié) ne peut être réparti qu’une seule fois. Calcul en centimes : épargne et réinvestissement arrondis, l’argent libre reçoit le reliquat.</p>
+      <div id="distRepartAlert"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Source du bénéfice</label>
+          <select id="distSourceMode">
+            <option value="net">Bénéfice net actuel (proposition)</option>
+            <option value="manual">Montant saisi manuellement</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Montant à répartir (€)</label>
+          <input type="number" id="distAmount" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Note (facultatif)</label>
+          <input type="text" id="distNote" placeholder="Ex. clôture mars">
+        </div>
+      </div>
+      <p class="field-help" id="distPreview"></p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="btnDistribute">Répartir un bénéfice</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tableau de bord épargne</h2>
+      <div class="grid-kpi" id="distEpargneKpis"></div>
+      <h3 style="margin-top:1rem;font-size:1rem">Évolution du solde d’épargne</h3>
+      <div class="chart-wrap" id="distEpargneChart"></div>
+    </div>
+
+    <div class="card">
+      <h2>Retrait ou dépense</h2>
+      <p class="field-help">Retrait d’épargne : manuel uniquement, motif obligatoire, confirmation. Aucun retrait automatique. Soldes jamais négatifs.</p>
+      <div id="distWithdrawAlert"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Enveloppe</label>
+          <select id="distWithdrawEnvelope">
+            <option value="epargne">Épargne (retrait exceptionnel)</option>
+            <option value="reinvestissement">Réinvestissement</option>
+            <option value="libre">Argent libre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Type d’opération</label>
+          <select id="distWithdrawKind">
+            <option value="retrait">Retrait</option>
+            <option value="depense">Dépense</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Montant (€)</label>
+          <input type="number" id="distWithdrawAmount" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Motif</label>
+          <input type="text" id="distWithdrawNote" placeholder="Obligatoire pour l’épargne">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-danger" id="btnWithdraw">Enregistrer retrait / dépense</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Historique (journal)</h2>
+      <p class="field-help">Journal en ajout seul : aucune ligne n’est supprimée ni modifiée. Une annulation crée une ligne inverse.</p>
+      <div class="ledger-filters" id="distLedgerFilters">
+        <button type="button" class="btn btn-sm active" data-ledger-filter="all">Tout</button>
+        <button type="button" class="btn btn-sm" data-ledger-filter="repartition">Répartitions</button>
+        <button type="button" class="btn btn-sm" data-ledger-filter="retrait">Retraits / dépenses</button>
+        <button type="button" class="btn btn-sm" data-ledger-filter="annulation">Annulations</button>
+      </div>
+      <div class="table-wrap" id="distLedgerTable"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="panel-settings" class="panel" role="tabpanel">
+    <p class="section-intro">Paramètres par défaut : prix d’achat, minimum de commande, marques, paliers de commission et plafond.</p>
+    <div class="card">
+      <h2>Prix d’achat par défaut &amp; commande</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>Haut (€)</label>
+          <input type="number" id="setPriceHaut" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Bas (€)</label>
+          <input type="number" id="setPriceBas" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Ensemble (€)</label>
+          <input type="number" id="setPriceEnsemble" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Minimum d’articles / commande <span class="hint" data-tip="Avertissement non bloquant si la commande est en dessous.">?</span></label>
+          <input type="number" id="setMinOrder" min="1" step="1">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Marques</h2>
+      <p class="field-help">Liste utilisée dans les formulaires d’achat, stock et ventes.</p>
+      <div id="brandsList" class="stack"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-sm" id="addBrand">+ Ajouter une marque</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Commission vendeurs</h2>
+      <div class="inline-checks" style="margin-bottom:0.75rem">
+        <label>
+          <input type="checkbox" id="setFlatCommission">
+          Désactiver les paliers et appliquer un taux fixe
+        </label>
+      </div>
+      <div class="form-grid" id="flatRateWrap">
+        <div class="field">
+          <label>Taux fixe (% de la marge)</label>
+          <input type="number" id="setFlatRate" min="0" max="100" step="0.1">
+        </div>
+      </div>
+      <div id="tiersWrap">
+        <p class="field-help">Paliers progressifs marginaux : chaque tranche ne s’applique qu’aux articles de cette tranche.</p>
+        <div id="tiersList" class="stack"></div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-sm" id="addTier">+ Ajouter un palier</button>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:0.85rem">
+        <div class="field">
+          <label>Plafond commission (% de la marge) <span class="hint" data-tip="Alerte si la commission dépasse ce pourcentage de la marge totale du vendeur.">?</span></label>
+          <input type="number" id="setCap" min="0" max="100" step="0.1">
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" id="saveSettings">Enregistrer les paramètres</button>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "gar_achat_revente_v1";
+  const TYPES = ["haut", "bas"];
+  const TYPE_LABELS = { haut: "Haut", bas: "Bas", ensemble: "Ensemble" };
+
+  const DEFAULT_SETTINGS = {
+    prices: { haut: 35, bas: 30, ensemble: 65 },
+    minOrder: 5,
+    brands: ["Essential", "Ralph Lauren", "Alo"],
+    useFlatCommission: false,
+    flatRate: 25,
+    commissionCap: 50,
+    tiers: [
+      { from: 1, to: 10, rate: 20 },
+      { from: 11, to: 25, rate: 30 },
+      { from: 26, to: null, rate: 40 }
+    ]
+  };
+
+  const DEFAULT_DISTRIBUTION = {
+    epargne: 20,
+    reinvestissement: 50,
+    libre: 30
+  };
+
+  const DEFAULT_PARTNERS = [
+    { id: "p1", name: "Associé 1", share: 50, capital: 0, withdrawn: 0 },
+    { id: "p2", name: "Associé 2", share: 50, capital: 0, withdrawn: 0 }
+  ];
+
+  function uid() {
+    return "id_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 9);
+  }
+
+  function todayStr() {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  function safeNum(v, fallback) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : (fallback === undefined ? 0 : fallback);
+  }
+
+  function clampNonNeg(v) {
+    const n = safeNum(v, 0);
+    return n < 0 ? 0 : n;
+  }
+
+  function formatMoney(n) {
+    const v = safeNum(n, 0);
+    const fixed = Math.round(v * 100) / 100;
+    const parts = fixed.toFixed(2).split(".");
+    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
+    return intPart + "," + parts[1] + "\u00a0€";
+  }
+
+  function formatPct(n) {
+    if (!Number.isFinite(n)) return "–";
+    return (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") + "\u00a0%";
+  }
+
+  function formatNum(n) {
+    if (!Number.isFinite(n)) return "–";
+    return String(Math.round(n * 100) / 100).replace(".", ",");
+  }
+
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  function deepClone(o) {
+    return JSON.parse(JSON.stringify(o));
+  }
+
+  function defaultState() {
+    return {
+      settings: deepClone(DEFAULT_SETTINGS),
+      partners: deepClone(DEFAULT_PARTNERS),
+      repayCapitalFirst: false,
+      purchases: [],
+      sales: [],
+      sellers: [],
+      transfers: [],
+      losses: [],
+      commissionPayments: [],
+      distribution: deepClone(DEFAULT_DISTRIBUTION),
+      ledger: []
+    };
+  }
+
+  let state = defaultState();
+
+  function saveState() {
+    try {
+      const json = JSON.stringify(state);
+      localStorage.setItem(STORAGE_KEY, json);
+    } catch (e) {
+      toast("Impossible d’enregistrer (stockage navigateur plein ou bloqué).");
+      console.error(e);
+    }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        state = defaultState();
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      const base = defaultState();
+      state = Object.assign(base, parsed);
+      if (!state.settings) state.settings = deepClone(DEFAULT_SETTINGS);
+      state.settings = Object.assign(deepClone(DEFAULT_SETTINGS), state.settings);
+      if (!Array.isArray(state.settings.brands) || !state.settings.brands.length) {
+        state.settings.brands = deepClone(DEFAULT_SETTINGS.brands);
+      }
+      if (!Array.isArray(state.settings.tiers) || !state.settings.tiers.length) {
+        state.settings.tiers = deepClone(DEFAULT_SETTINGS.tiers);
+      }
+      if (!Array.isArray(state.partners) || state.partners.length < 1) {
+        state.partners = deepClone(DEFAULT_PARTNERS);
+      }
+      ["purchases", "sales", "sellers", "transfers", "losses", "commissionPayments", "ledger"].forEach(function (k) {
+        if (!Array.isArray(state[k])) state[k] = [];
+      });
+      if (!state.distribution) state.distribution = deepClone(DEFAULT_DISTRIBUTION);
+      state.distribution = Object.assign(deepClone(DEFAULT_DISTRIBUTION), state.distribution);
+    } catch (e) {
+      toast("Données locales illisibles : démarrage à vide.");
+      state = defaultState();
+      console.error(e);
+    }
+  }
+
+  /* ========== STOCK / COST ENGINE ========== */
+
+  function expandPurchaseLines(lines) {
+    const units = [];
+    (lines || []).forEach(function (line) {
+      const qty = Math.floor(clampNonNeg(line.qty));
+      const unitPrice = clampNonNeg(line.unitPrice);
+      const brand = line.brand;
+      if (!qty || !brand) return;
+      if (line.type === "ensemble") {
+        for (let i = 0; i < qty; i++) {
+          units.push({ brand: brand, type: "haut", price: unitPrice / 2 });
+          units.push({ brand: brand, type: "bas", price: unitPrice / 2 });
+        }
+      } else if (line.type === "haut" || line.type === "bas") {
+        for (let i = 0; i < qty; i++) {
+          units.push({ brand: brand, type: line.type, price: unitPrice });
+        }
+      }
+    });
+    return units;
+  }
+
+  function articleCountForOrder(lines) {
+    let n = 0;
+    (lines || []).forEach(function (line) {
+      const qty = Math.floor(clampNonNeg(line.qty));
+      if (line.type === "ensemble") n += qty;
+      else if (line.type === "haut" || line.type === "bas") n += qty;
+    });
+    return n;
+  }
+
+  function stockKey(brand, type) {
+    return brand + "||" + type;
+  }
+
+  function emptyStockBucket() {
+    return {
+      bought: 0,
+      sold: 0,
+      lostMine: 0,
+      lostSeller: 0,
+      withMe: 0,
+      bySeller: {},
+      costSumBought: 0,
+      costSumSold: 0,
+      costSumLost: 0,
+      remainingCostSum: 0
+    };
+  }
+
+  function buildInventory() {
+    const map = {};
+    function ensure(brand, type) {
+      const k = stockKey(brand, type);
+      if (!map[k]) {
+        map[k] = emptyStockBucket();
+        map[k].brand = brand;
+        map[k].type = type;
+      }
+      return map[k];
+    }
+
+    const queues = {};
+    function qEnsure(brand, type) {
+      const k = stockKey(brand, type);
+      if (!queues[k]) queues[k] = [];
+      return queues[k];
+    }
+
+    // Clear sale cost caches before replay
+    state.sales.forEach(function (s) {
+      s._cogs = 0;
+      s._unitCost = 0;
+    });
+
+    const events = [];
+    state.purchases.forEach(function (p) {
+      events.push({ kind: "purchase", date: p.date || "", id: p.id, ref: p });
+    });
+    state.transfers.forEach(function (t) {
+      events.push({ kind: "transfer", date: t.date || "", id: t.id, ref: t });
+    });
+    state.losses.forEach(function (l) {
+      events.push({ kind: "loss", date: l.date || "", id: l.id, ref: l });
+    });
+    state.sales.forEach(function (s) {
+      events.push({ kind: "sale", date: s.date || "", id: s.id, ref: s });
+    });
+    const order = { purchase: 0, transfer: 1, loss: 2, sale: 3 };
+    events.sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      const oa = order[a.kind];
+      const ob = order[b.kind];
+      if (oa !== ob) return oa - ob;
+      return String(a.id).localeCompare(String(b.id));
+    });
+
+    events.forEach(function (ev) {
+      if (ev.kind === "purchase") {
+        const p = ev.ref;
+        const units = expandPurchaseLines(p.lines);
+        const shipping = clampNonNeg(p.shipping);
+        const n = units.length;
+        const shipEach = n > 0 ? shipping / n : 0;
+        units.forEach(function (u) {
+          const cost = u.price + shipEach;
+          const b = ensure(u.brand, u.type);
+          b.bought += 1;
+          b.withMe += 1;
+          b.costSumBought += cost;
+          b.remainingCostSum += cost;
+          qEnsure(u.brand, u.type).push(cost);
+        });
+      } else if (ev.kind === "transfer") {
+        const t = ev.ref;
+        const b = ensure(t.brand, t.type);
+        const qty = Math.floor(clampNonNeg(t.qty));
+        b.withMe -= qty;
+        if (!b.bySeller[t.sellerId]) b.bySeller[t.sellerId] = 0;
+        b.bySeller[t.sellerId] += qty;
+      } else if (ev.kind === "loss") {
+        const l = ev.ref;
+        const b = ensure(l.brand, l.type);
+        const qty = Math.floor(clampNonNeg(l.qty));
+        const q = qEnsure(l.brand, l.type);
+        let lostCost = 0;
+        for (let i = 0; i < qty; i++) {
+          const c = q.length ? q.shift() : avgCostFallback(b);
+          lostCost += c;
+          b.remainingCostSum -= c;
+        }
+        b.costSumLost += lostCost;
+        if (l.location === "mine") {
+          b.lostMine += qty;
+          b.withMe -= qty;
+        } else {
+          b.lostSeller += qty;
+          if (!b.bySeller[l.location]) b.bySeller[l.location] = 0;
+          b.bySeller[l.location] -= qty;
+        }
+      } else if (ev.kind === "sale") {
+        const s = ev.ref;
+        const b = ensure(s.brand, s.type);
+        const qty = Math.floor(clampNonNeg(s.qty));
+        const q = qEnsure(s.brand, s.type);
+        let cogs = 0;
+        for (let i = 0; i < qty; i++) {
+          const c = q.length ? q.shift() : avgCostFallback(b);
+          cogs += c;
+          b.remainingCostSum -= c;
+        }
+        b.sold += qty;
+        b.costSumSold += cogs;
+        s._cogs = cogs;
+        s._unitCost = qty > 0 ? cogs / qty : 0;
+        if (s.channel === "direct") {
+          b.withMe -= qty;
+        } else {
+          if (!b.bySeller[s.channel]) b.bySeller[s.channel] = 0;
+          b.bySeller[s.channel] -= qty;
+        }
+      }
+    });
+
+    return map;
+  }
+
+  function avgCostFallback(bucket) {
+    if (bucket.bought > 0) return bucket.costSumBought / bucket.bought;
+    return 0;
+  }
+
+  function getStockAvailable(inv, brand, type, location) {
+    const b = inv[stockKey(brand, type)];
+    if (!b) return 0;
+    if (location === "direct" || location === "mine") return b.withMe;
+    return b.bySeller[location] || 0;
+  }
+
+  function unitCostEstimate(inv, brand, type) {
+    const b = inv[stockKey(brand, type)];
+    if (!b) return 0;
+    const remaining = b.withMe + Object.keys(b.bySeller).reduce(function (a, k) { return a + (b.bySeller[k] || 0); }, 0);
+    if (remaining > 0 && b.remainingCostSum > 0) return b.remainingCostSum / remaining;
+    if (b.bought > 0) return b.costSumBought / b.bought;
+    return 0;
+  }
+
+  /* ========== COMMISSION ========== */
+
+  function sortedTiers() {
+    const tiers = (state.settings.tiers || []).map(function (t) {
+      return {
+        from: Math.max(1, Math.floor(safeNum(t.from, 1))),
+        to: t.to === null || t.to === "" || t.to === undefined ? null : Math.floor(safeNum(t.to, 0)),
+        rate: clampNonNeg(t.rate)
+      };
+    });
+    tiers.sort(function (a, b) { return a.from - b.from; });
+    return tiers;
+  }
+
+  function commissionOnArticles(articleCount, totalMargin) {
+    const n = Math.max(0, Math.floor(safeNum(articleCount, 0)));
+    const margin = safeNum(totalMargin, 0);
+    if (n <= 0 || margin === 0) {
+      return { commission: 0, effectiveRate: 0, tierLabel: "–", nextTierGap: null, capped: false, rawCommission: 0 };
+    }
+    const marginPer = margin / n;
+    let commission = 0;
+
+    if (state.settings.useFlatCommission) {
+      const rate = clampNonNeg(state.settings.flatRate);
+      commission = margin * (rate / 100);
+      const cap = clampNonNeg(state.settings.commissionCap);
+      const capped = margin > 0 && (commission / margin) * 100 > cap + 1e-9;
+      return {
+        commission: commission,
+        effectiveRate: margin > 0 ? (commission / margin) * 100 : 0,
+        tierLabel: "Taux fixe " + formatPct(rate),
+        nextTierGap: null,
+        capped: capped,
+        rawCommission: commission,
+        currentTierRate: rate
+      };
+    }
+
+    const tiers = sortedTiers();
+    let covered = 0;
+    for (let i = 0; i < tiers.length; i++) {
+      const t = tiers[i];
+      if (n < t.from) break;
+      const end = t.to === null ? n : Math.min(n, t.to);
+      const start = t.from;
+      if (end < start) continue;
+      const countInTier = end - start + 1;
+      commission += countInTier * marginPer * (t.rate / 100);
+      covered = end;
+    }
+    // Articles beyond last defined open tier already handled if to=null
+    // If last tier has a finite "to" and n exceeds it, apply last rate to remainder
+    if (tiers.length && covered < n) {
+      const last = tiers[tiers.length - 1];
+      if (last.to !== null) {
+        commission += (n - covered) * marginPer * (last.rate / 100);
+      }
+    }
+
+    let currentTier = tiers[0] || null;
+    let nextTierGap = null;
+    for (let i = 0; i < tiers.length; i++) {
+      const t = tiers[i];
+      const inTier = n >= t.from && (t.to === null || n <= t.to);
+      const pastStart = n >= t.from;
+      if (pastStart) currentTier = t;
+      if (t.from > n) {
+        nextTierGap = t.from - n;
+        break;
+      }
+      if (inTier && t.to !== null) {
+        nextTierGap = t.to - n + 1 > 0 ? (tiers[i + 1] ? tiers[i + 1].from - n : null) : null;
+        if (tiers[i + 1]) nextTierGap = tiers[i + 1].from - n;
+      }
+    }
+
+    const effectiveRate = margin > 0 ? (commission / margin) * 100 : 0;
+    const cap = clampNonNeg(state.settings.commissionCap);
+    const capped = margin > 0 && effectiveRate > cap + 1e-9;
+
+    return {
+      commission: commission,
+      effectiveRate: effectiveRate,
+      tierLabel: currentTier
+        ? (currentTier.to === null
+          ? currentTier.from + "+ : " + formatPct(currentTier.rate)
+          : currentTier.from + "–" + currentTier.to + " : " + formatPct(currentTier.rate))
+        : "–",
+      nextTierGap: nextTierGap,
+      capped: capped,
+      rawCommission: commission,
+      currentTierRate: currentTier ? currentTier.rate : 0
+    };
+  }
+
+  function sellerSalesStats(sellerId, dateFilter) {
+    let articles = 0;
+    let revenue = 0;
+    let cogs = 0;
+    let fees = 0;
+    let margin = 0;
+    state.sales.forEach(function (s) {
+      if (s.channel !== sellerId) return;
+      if (dateFilter && !inPeriod(s.date, dateFilter)) return;
+      const qty = Math.floor(clampNonNeg(s.qty));
+      const price = clampNonNeg(s.unitPrice);
+      const saleCogs = safeNum(s._cogs, qty * safeNum(s._unitCost, 0));
+      const saleFees = clampNonNeg(s.platformFees);
+      articles += qty;
+      revenue += qty * price;
+      cogs += saleCogs;
+      fees += saleFees;
+      margin += qty * price - saleCogs;
+    });
+    const paid = state.commissionPayments
+      .filter(function (p) {
+        if (p.sellerId !== sellerId) return false;
+        if (dateFilter && !inPeriod(p.date, dateFilter)) return false;
+        return true;
+      })
+      .reduce(function (a, p) { return a + clampNonNeg(p.amount); }, 0);
+
+    const comm = commissionOnArticles(articles, margin);
+    return {
+      articles: articles,
+      revenue: revenue,
+      cogs: cogs,
+      fees: fees,
+      margin: margin,
+      commission: comm.commission,
+      effectiveRate: comm.effectiveRate,
+      tierLabel: comm.tierLabel,
+      nextTierGap: comm.nextTierGap,
+      capped: comm.capped,
+      paid: paid,
+      due: Math.max(0, comm.commission - paid),
+      companyProfit: margin - comm.commission - fees
+    };
+  }
+
+  /* ========== PERIOD FILTER ========== */
+
+  function getDashFilter() {
+    const mode = document.getElementById("dashPeriod").value;
+    if (mode === "all") return null;
+    const now = new Date();
+    if (mode === "thisMonth") {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1);
+      const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { from: iso(from), to: iso(to) };
+    }
+    if (mode === "lastMonth") {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const to = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { from: iso(from), to: iso(to) };
+    }
+    return {
+      from: document.getElementById("dashFrom").value || "0000-01-01",
+      to: document.getElementById("dashTo").value || "9999-12-31"
+    };
+  }
+
+  function iso(d) {
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  function inPeriod(dateStr, filter) {
+    if (!filter) return true;
+    if (!dateStr) return false;
+    return dateStr >= filter.from && dateStr <= filter.to;
+  }
+
+  /* ========== AGGREGATES ========== */
+
+  function computeDashboard(filter) {
+    const inv = buildInventory();
+
+    let purchaseMerch = 0;
+    let purchaseShip = 0;
+    let articlesBought = 0;
+    state.purchases.forEach(function (p) {
+      if (filter && !inPeriod(p.date, filter)) return;
+      purchaseShip += clampNonNeg(p.shipping);
+      (p.lines || []).forEach(function (line) {
+        const qty = Math.floor(clampNonNeg(line.qty));
+        purchaseMerch += qty * clampNonNeg(line.unitPrice);
+        articlesBought += line.type === "ensemble" ? qty * 2 : qty;
+      });
+    });
+
+    let revenue = 0;
+    let revenuePaid = 0;
+    let revenuePending = 0;
+    let platformFees = 0;
+    let cogsSold = 0;
+    let articlesSold = 0;
+    state.sales.forEach(function (s) {
+      if (filter && !inPeriod(s.date, filter)) return;
+      const qty = Math.floor(clampNonNeg(s.qty));
+      const total = qty * clampNonNeg(s.unitPrice);
+      revenue += total;
+      if (s.paid === "paid") revenuePaid += total;
+      else revenuePending += total;
+      platformFees += clampNonNeg(s.platformFees);
+      cogsSold += safeNum(s._cogs, 0);
+      articlesSold += qty;
+    });
+
+    let lossesCost = 0;
+    let articlesLost = 0;
+    state.losses.forEach(function (l) {
+      if (filter && !inPeriod(l.date, filter)) return;
+      articlesLost += Math.floor(clampNonNeg(l.qty));
+    });
+    // Loss cost from inventory buckets (all-time for stock value; for P&L use period approx via rebuild)
+    // Recompute loss costs for period by replaying — use stored approach:
+    Object.keys(inv).forEach(function (k) {
+      lossesCost += inv[k].costSumLost;
+    });
+    // If filtered, approximate losses in period with average cost
+    if (filter) {
+      lossesCost = 0;
+      state.losses.forEach(function (l) {
+        if (!inPeriod(l.date, filter)) return;
+        const avg = unitCostEstimate(inv, l.brand, l.type);
+        // better: use bought average
+        const b = inv[stockKey(l.brand, l.type)];
+        const unit = b && b.bought ? b.costSumBought / b.bought : avg;
+        lossesCost += Math.floor(clampNonNeg(l.qty)) * unit;
+      });
+      // Also recompute cogs for period only (already done via sales filter)
+      // Recalculate inventory costSumLost is all-time; period path above is fine
+    }
+
+    let commissionDue = 0;
+    let commissionPaid = 0;
+    state.sellers.forEach(function (seller) {
+      const st = sellerSalesStats(seller.id, filter);
+      commissionDue += st.commission;
+      commissionPaid += st.paid;
+    });
+
+    // Stock remaining (always current, not filtered)
+    let articlesInStock = 0;
+    let stockValue = 0;
+    Object.keys(inv).forEach(function (k) {
+      const b = inv[k];
+      const sellerQty = Object.keys(b.bySeller).reduce(function (a, id) { return a + (b.bySeller[id] || 0); }, 0);
+      const rem = b.withMe + sellerQty;
+      articlesInStock += rem;
+      stockValue += Math.max(0, b.remainingCostSum);
+    });
+
+    const netProfit = revenue - cogsSold - platformFees - commissionDue - lossesCost;
+    const netMarginPct = revenue > 0 ? (netProfit / revenue) * 100 : null;
+
+    const cashOut = purchaseMerch + purchaseShip;
+    const cashIn = revenuePaid;
+    const cashDiff = cashIn - cashOut;
+
+    return {
+      inv: inv,
+      revenue: revenue,
+      purchaseMerch: purchaseMerch,
+      purchaseShip: purchaseShip,
+      platformFees: platformFees,
+      commissionDue: commissionDue,
+      commissionPaid: commissionPaid,
+      cogsSold: cogsSold,
+      netProfit: netProfit,
+      netMarginPct: netMarginPct,
+      articlesBought: articlesBought,
+      articlesSold: articlesSold,
+      articlesInStock: articlesInStock,
+      stockValue: stockValue,
+      revenuePending: revenuePending,
+      cashOut: cashOut,
+      cashIn: cashIn,
+      cashDiff: cashDiff,
+      lossesCost: lossesCost
+    };
+  }
+
+  /* ========== RENDER HELPERS ========== */
+
+  function el(html) {
+    const d = document.createElement("div");
+    d.innerHTML = html.trim();
+    return d.firstChild;
+  }
+
+  function moneyClass(n) {
+    if (n > 0) return "money-pos";
+    if (n < 0) return "money-neg";
+    return "";
+  }
+
+  function kpiHtml(label, value, cls) {
+    return '<div class="kpi ' + (cls || "") + '"><div class="label">' + label + '</div><div class="value">' + value + "</div></div>";
+  }
+
+  function fillBrandSelects() {
+    const brands = state.settings.brands || [];
+    ["saleBrand", "lossBrand", "transferBrand"].forEach(function (id) {
+      const sel = document.getElementById(id);
+      const cur = sel.value;
+      sel.innerHTML = brands.map(function (b) {
+        return '<option value="' + escapeAttr(b) + '">' + escapeHtml(b) + "</option>";
+      }).join("");
+      if (brands.indexOf(cur) >= 0) sel.value = cur;
+    });
+  }
+
+  function fillSellerSelects() {
+    const sellers = state.sellers;
+    const opts = sellers.map(function (s) {
+      return '<option value="' + escapeAttr(s.id) + '">' + escapeHtml(s.name) + " (" + escapeHtml(s.city) + ")</option>";
+    }).join("");
+
+    const saleChannel = document.getElementById("saleChannel");
+    const cur = saleChannel.value;
+    saleChannel.innerHTML = '<option value="direct">Vente directe</option>' + opts;
+    if (cur === "direct" || sellers.some(function (s) { return s.id === cur; })) saleChannel.value = cur;
+
+    ["transferSeller", "paySeller"].forEach(function (id) {
+      const sel = document.getElementById(id);
+      const c = sel.value;
+      sel.innerHTML = sellers.length ? opts : '<option value="">Aucun vendeur</option>';
+      if (sellers.some(function (s) { return s.id === c; })) sel.value = c;
+    });
+
+    const lossLoc = document.getElementById("lossLocation");
+    const lc = lossLoc.value;
+    lossLoc.innerHTML = '<option value="mine">Chez moi</option>' + opts;
+    if (lc === "mine" || sellers.some(function (s) { return s.id === lc; })) lossLoc.value = lc;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, "&#39;");
+  }
+
+  /* ========== TABS ========== */
+
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".panel").forEach(function (p) { p.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  /* ========== PURCHASE FORM ========== */
+
+  function defaultPurchaseLine() {
+    return { brand: state.settings.brands[0] || "", type: "haut", qty: 1, unitPrice: state.settings.prices.haut };
+  }
+
+  let purchaseLineData = [defaultPurchaseLine()];
+
+  function renderPurchaseLines() {
+    const wrap = document.getElementById("purchaseLines");
+    const brands = state.settings.brands || [];
+    wrap.innerHTML = "";
+    purchaseLineData.forEach(function (line, idx) {
+      const row = document.createElement("div");
+      row.className = "line-row";
+      const brandOpts = brands.map(function (b) {
+        return '<option value="' + escapeAttr(b) + '"' + (b === line.brand ? " selected" : "") + ">" + escapeHtml(b) + "</option>";
+      }).join("");
+      row.innerHTML =
+        '<div class="field"><label>Marque</label><select data-i="' + idx + '" data-f="brand">' + brandOpts + "</select></div>" +
+        '<div class="field"><label>Type</label><select data-i="' + idx + '" data-f="type">' +
+        '<option value="haut"' + (line.type === "haut" ? " selected" : "") + ">Haut</option>" +
+        '<option value="bas"' + (line.type === "bas" ? " selected" : "") + ">Bas</option>" +
+        '<option value="ensemble"' + (line.type === "ensemble" ? " selected" : "") + ">Ensemble</option>" +
+        "</select></div>" +
+        '<div class="field"><label>Qté</label><input type="number" min="1" step="1" data-i="' + idx + '" data-f="qty" value="' + line.qty + '"></div>' +
+        '<div class="field"><label>Prix unit. (€)</label><input type="number" min="0" step="0.01" data-i="' + idx + '" data-f="unitPrice" value="' + line.unitPrice + '"></div>' +
+        '<div class="field"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-danger" data-remove="' + idx + '">×</button></div>';
+      wrap.appendChild(row);
+    });
+
+    wrap.querySelectorAll("select, input").forEach(function (inp) {
+      inp.addEventListener("change", onPurchaseLineChange);
+      inp.addEventListener("input", onPurchaseLineChange);
+    });
+    wrap.querySelectorAll("[data-remove]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const i = Number(btn.getAttribute("data-remove"));
+        purchaseLineData.splice(i, 1);
+        if (!purchaseLineData.length) purchaseLineData = [defaultPurchaseLine()];
+        renderPurchaseLines();
+        updatePurchaseWarning();
+      });
+    });
+    updatePurchaseWarning();
+  }
+
+  function onPurchaseLineChange(e) {
+    const t = e.target;
+    const i = Number(t.getAttribute("data-i"));
+    const f = t.getAttribute("data-f");
+    if (!purchaseLineData[i]) return;
+    if (f === "qty") purchaseLineData[i].qty = Math.max(1, Math.floor(safeNum(t.value, 1)));
+    else if (f === "unitPrice") purchaseLineData[i].unitPrice = clampNonNeg(t.value);
+    else if (f === "type") {
+      purchaseLineData[i].type = t.value;
+      const prices = state.settings.prices;
+      purchaseLineData[i].unitPrice = prices[t.value] != null ? prices[t.value] : purchaseLineData[i].unitPrice;
+      renderPurchaseLines();
+      return;
+    } else if (f === "brand") purchaseLineData[i].brand = t.value;
+    updatePurchaseWarning();
+  }
+
+  function updatePurchaseWarning() {
+    const n = articleCountForOrder(purchaseLineData);
+    const min = Math.max(1, Math.floor(safeNum(state.settings.minOrder, 5)));
+    const box = document.getElementById("purchaseWarning");
+    document.getElementById("minOrderHint").textContent = String(min);
+    if (n < min) {
+      box.innerHTML = '<div class="alert alert-warn">Attention : cette commande contient ' + n + " article(s), en dessous du minimum recommandé de " + min + " (enregistrement possible).</div>";
+    } else {
+      box.innerHTML = "";
+    }
+  }
+
+  document.getElementById("addPurchaseLine").addEventListener("click", function () {
+    purchaseLineData.push(defaultPurchaseLine());
+    renderPurchaseLines();
+  });
+
+  document.getElementById("purchaseForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const lines = purchaseLineData.map(function (l) {
+      return {
+        brand: l.brand,
+        type: l.type,
+        qty: Math.max(1, Math.floor(safeNum(l.qty, 1))),
+        unitPrice: clampNonNeg(l.unitPrice)
+      };
+    }).filter(function (l) { return l.brand && l.qty > 0; });
+    if (!lines.length) {
+      toast("Ajoutez au moins une ligne.");
+      return;
+    }
+    const editId = document.getElementById("purchaseEditId").value;
+    const rec = {
+      id: editId || uid(),
+      date: document.getElementById("purchaseDate").value || todayStr(),
+      shipping: clampNonNeg(document.getElementById("purchaseShipping").value),
+      note: document.getElementById("purchaseNote").value.trim(),
+      lines: lines
+    };
+    if (editId) {
+      const idx = state.purchases.findIndex(function (p) { return p.id === editId; });
+      if (idx >= 0) state.purchases[idx] = rec;
+    } else {
+      state.purchases.push(rec);
+    }
+    saveState();
+    resetPurchaseForm();
+    renderAll();
+    toast(editId ? "Commande modifiée." : "Commande enregistrée.");
+  });
+
+  function resetPurchaseForm() {
+    document.getElementById("purchaseEditId").value = "";
+    document.getElementById("purchaseDate").value = todayStr();
+    document.getElementById("purchaseShipping").value = "0";
+    document.getElementById("purchaseNote").value = "";
+    document.getElementById("purchaseFormTitle").textContent = "Nouvelle commande";
+    document.getElementById("purchaseSubmit").textContent = "Enregistrer la commande";
+    document.getElementById("purchaseCancel").hidden = true;
+    purchaseLineData = [defaultPurchaseLine()];
+    renderPurchaseLines();
+  }
+
+  document.getElementById("purchaseCancel").addEventListener("click", resetPurchaseForm);
+
+  function editPurchase(id) {
+    const p = state.purchases.find(function (x) { return x.id === id; });
+    if (!p) return;
+    document.getElementById("purchaseEditId").value = p.id;
+    document.getElementById("purchaseDate").value = p.date;
+    document.getElementById("purchaseShipping").value = p.shipping;
+    document.getElementById("purchaseNote").value = p.note || "";
+    purchaseLineData = deepClone(p.lines);
+    document.getElementById("purchaseFormTitle").textContent = "Modifier la commande";
+    document.getElementById("purchaseSubmit").textContent = "Mettre à jour";
+    document.getElementById("purchaseCancel").hidden = false;
+    renderPurchaseLines();
+    document.querySelector('.tab-btn[data-tab="purchases"]').click();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function deletePurchase(id) {
+    if (!confirm("Supprimer cette commande ? Le stock sera recalculé.")) return;
+    state.purchases = state.purchases.filter(function (p) { return p.id !== id; });
+    saveState();
+    renderAll();
+    toast("Commande supprimée.");
+  }
+
+  function renderPurchasesTable() {
+    const wrap = document.getElementById("purchasesTable");
+    if (!state.purchases.length) {
+      wrap.innerHTML = '<div class="empty">Aucune commande pour l’instant.</div>';
+      return;
+    }
+    const rows = state.purchases.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).map(function (p) {
+      const nArt = articleCountForOrder(p.lines);
+      const units = expandPurchaseLines(p.lines);
+      const merch = (p.lines || []).reduce(function (a, l) { return a + Math.floor(clampNonNeg(l.qty)) * clampNonNeg(l.unitPrice); }, 0);
+      const ship = clampNonNeg(p.shipping);
+      const shipEach = units.length ? ship / units.length : 0;
+      const linesTxt = (p.lines || []).map(function (l) {
+        return escapeHtml(l.brand) + " · " + TYPE_LABELS[l.type] + " × " + l.qty + " @ " + formatMoney(l.unitPrice);
+      }).join("<br>");
+      return "<tr><td>" + escapeHtml(p.date) + "</td><td>" + linesTxt +
+        '</td><td>' + nArt + '</td><td>' + formatMoney(merch) + "</td><td>" + formatMoney(ship) +
+        "<br><span class='muted' style='font-size:0.8rem'>+" + formatMoney(shipEach) + "/art.</span></td><td>" +
+        formatMoney(merch + ship) + "</td><td>" + escapeHtml(p.note || "–") +
+        '</td><td><button type="button" class="btn btn-sm" data-edit-p="' + p.id + '">Modifier</button> ' +
+        '<button type="button" class="btn btn-sm btn-danger" data-del-p="' + p.id + '">Supprimer</button></td></tr>';
+    }).join("");
+    wrap.innerHTML = "<table><thead><tr><th>Date</th><th>Lignes</th><th>Articles</th><th>Marchandise</th><th>Livraison</th><th>Total</th><th>Note</th><th></th></tr></thead><tbody>" + rows + "</tbody></table>";
+    wrap.querySelectorAll("[data-edit-p]").forEach(function (b) {
+      b.addEventListener("click", function () { editPurchase(b.getAttribute("data-edit-p")); });
+    });
+    wrap.querySelectorAll("[data-del-p]").forEach(function (b) {
+      b.addEventListener("click", function () { deletePurchase(b.getAttribute("data-del-p")); });
+    });
+  }
+
+  /* ========== STOCK ========== */
+
+  function renderStock() {
+    const inv = buildInventory();
+    const wrap = document.getElementById("stockTable");
+    const alerts = document.getElementById("stockAlerts");
+    const keys = Object.keys(inv).sort();
+    let alertHtml = "";
+    keys.forEach(function (k) {
+      const b = inv[k];
+      const sellerQty = Object.keys(b.bySeller).reduce(function (a, id) { return a + (b.bySeller[id] || 0); }, 0);
+      if (b.withMe < 0 || sellerQty < 0 || Object.keys(b.bySeller).some(function (id) { return (b.bySeller[id] || 0) < 0; })) {
+        alertHtml += '<div class="alert alert-danger">Stock négatif détecté : ' + escapeHtml(b.brand) + " / " + TYPE_LABELS[b.type] +
+          " — une sortie dépasse le disponible. Corrigez ventes, transferts ou pertes.</div>";
+      }
+    });
+    alerts.innerHTML = alertHtml;
+
+    if (!keys.length) {
+      wrap.innerHTML = '<div class="empty">Aucun stock. Ajoutez une commande dans Achats.</div>';
+      return;
+    }
+
+    const sellerCols = state.sellers.map(function (s) {
+      return "<th>" + escapeHtml(s.name) + "</th>";
+    }).join("");
+
+    const body = keys.map(function (k) {
+      const b = inv[k];
+      const sellerQty = Object.keys(b.bySeller).reduce(function (a, id) { return a + (b.bySeller[id] || 0); }, 0);
+      const rem = b.withMe + sellerQty;
+      const neg = b.withMe < 0 || sellerQty < 0;
+      const sellerCells = state.sellers.map(function (s) {
+        const q = b.bySeller[s.id] || 0;
+        const cls = q < 0 ? "money-neg" : "";
+        return '<td class="' + cls + '">' + q + "</td>";
+      }).join("");
+      return "<tr" + (neg ? ' style="background:#fceceb"' : "") + "><td>" + escapeHtml(b.brand) + "</td><td>" + TYPE_LABELS[b.type] +
+        "</td><td>" + b.bought + "</td><td>" + b.sold + "</td><td>" + (b.lostMine + b.lostSeller) +
+        '</td><td class="' + (b.withMe < 0 ? "money-neg" : "") + '">' + b.withMe + "</td>" + sellerCells +
+        "<td>" + rem + "</td><td>" + formatMoney(Math.max(0, b.remainingCostSum)) + "</td></tr>";
+    }).join("");
+
+    wrap.innerHTML = "<table><thead><tr><th>Marque</th><th>Type</th><th>Acheté</th><th>Vendu</th><th>Pertes</th><th>Chez moi</th>" +
+      sellerCols + "<th>Total stock</th><th>Valeur revient</th></tr></thead><tbody>" + body + "</tbody></table>";
+  }
+
+  document.getElementById("lossForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const brand = document.getElementById("lossBrand").value;
+    const type = document.getElementById("lossType").value;
+    const qty = Math.max(1, Math.floor(safeNum(document.getElementById("lossQty").value, 1)));
+    const location = document.getElementById("lossLocation").value;
+    const inv = buildInventory();
+    const avail = getStockAvailable(inv, brand, type, location);
+    if (qty > avail) {
+      toast("Stock insuffisant (" + avail + " disponible).");
+      return;
+    }
+    state.losses.push({
+      id: uid(),
+      date: document.getElementById("lossDate").value || todayStr(),
+      brand: brand,
+      type: type,
+      qty: qty,
+      location: location,
+      reason: document.getElementById("lossReason").value,
+      note: document.getElementById("lossNote").value.trim()
+    });
+    saveState();
+    document.getElementById("lossNote").value = "";
+    document.getElementById("lossQty").value = "1";
+    renderAll();
+    toast("Perte enregistrée.");
+  });
+
+  function renderLossesTable() {
+    const wrap = document.getElementById("lossesTable");
+    if (!state.losses.length) {
+      wrap.innerHTML = "";
+      return;
+    }
+    const rows = state.losses.slice().reverse().map(function (l) {
+      const loc = l.location === "mine" ? "Chez moi" : ((state.sellers.find(function (s) { return s.id === l.location; }) || {}).name || "–");
+      return "<tr><td>" + escapeHtml(l.date) + "</td><td>" + escapeHtml(l.brand) + "</td><td>" + TYPE_LABELS[l.type] +
+        "</td><td>" + l.qty + "</td><td>" + escapeHtml(loc) + "</td><td>" + escapeHtml(l.reason) +
+        "</td><td>" + escapeHtml(l.note || "–") +
+        '</td><td><button type="button" class="btn btn-sm btn-danger" data-del-l="' + l.id + '">Supprimer</button></td></tr>';
+    }).join("");
+    wrap.innerHTML = "<table><thead><tr><th>Date</th><th>Marque</th><th>Type</th><th>Qté</th><th>Lieu</th><th>Motif</th><th>Note</th><th></th></tr></thead><tbody>" +
+      rows + "</tbody></table>";
+    wrap.querySelectorAll("[data-del-l]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!confirm("Supprimer cet enregistrement ?")) return;
+        state.losses = state.losses.filter(function (l) { return l.id !== b.getAttribute("data-del-l"); });
+        saveState();
+        renderAll();
+      });
+    });
+  }
+
+  /* ========== SALES ========== */
+
+  function updateSaleStockHint() {
+    const brand = document.getElementById("saleBrand").value;
+    const type = document.getElementById("saleType").value;
+    const channel = document.getElementById("saleChannel").value;
+    const inv = buildInventory();
+    // When editing, add back current sale qty
+    const editId = document.getElementById("saleEditId").value;
+    let avail = getStockAvailable(inv, brand, type, channel);
+    if (editId) {
+      const cur = state.sales.find(function (s) { return s.id === editId; });
+      if (cur && cur.brand === brand && cur.type === type && cur.channel === channel) {
+        avail += Math.floor(clampNonNeg(cur.qty));
+      }
+    }
+    const unitCost = unitCostEstimate(inv, brand, type);
+    const box = document.getElementById("saleStockHint");
+    box.hidden = false;
+    box.className = avail <= 0 ? "alert alert-warn" : "alert alert-info";
+    box.textContent = "Stock disponible : " + avail + " · Coût de revient estimé : " + formatMoney(unitCost);
+  }
+
+  ["saleBrand", "saleType", "saleChannel"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", updateSaleStockHint);
+  });
+
+  document.getElementById("saleForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const brand = document.getElementById("saleBrand").value;
+    const type = document.getElementById("saleType").value;
+    const qty = Math.max(1, Math.floor(safeNum(document.getElementById("saleQty").value, 1)));
+    const channel = document.getElementById("saleChannel").value;
+    const editId = document.getElementById("saleEditId").value;
+
+    const inv = buildInventory();
+    let avail = getStockAvailable(inv, brand, type, channel);
+    if (editId) {
+      const cur = state.sales.find(function (s) { return s.id === editId; });
+      if (cur && cur.brand === brand && cur.type === type && cur.channel === channel) {
+        avail += Math.floor(clampNonNeg(cur.qty));
+      }
+    }
+    if (qty > avail) {
+      toast("Vente impossible : stock insuffisant (" + avail + " disponible).");
+      return;
+    }
+
+    const rec = {
+      id: editId || uid(),
+      date: document.getElementById("saleDate").value || todayStr(),
+      brand: brand,
+      type: type,
+      qty: qty,
+      unitPrice: clampNonNeg(document.getElementById("salePrice").value),
+      channel: channel,
+      platformFees: clampNonNeg(document.getElementById("saleFees").value),
+      paid: document.getElementById("salePaid").value
+    };
+
+    if (editId) {
+      const idx = state.sales.findIndex(function (s) { return s.id === editId; });
+      if (idx >= 0) state.sales[idx] = rec;
+    } else {
+      state.sales.push(rec);
+    }
+    saveState();
+    resetSaleForm();
+    renderAll();
+    toast(editId ? "Vente modifiée." : "Vente enregistrée.");
+  });
+
+  function resetSaleForm() {
+    document.getElementById("saleEditId").value = "";
+    document.getElementById("saleDate").value = todayStr();
+    document.getElementById("saleQty").value = "1";
+    document.getElementById("salePrice").value = "";
+    document.getElementById("saleFees").value = "0";
+    document.getElementById("salePaid").value = "paid";
+    document.getElementById("saleChannel").value = "direct";
+    document.getElementById("saleFormTitle").textContent = "Nouvelle vente";
+    document.getElementById("saleSubmit").textContent = "Enregistrer la vente";
+    document.getElementById("saleCancel").hidden = true;
+    updateSaleStockHint();
+  }
+
+  document.getElementById("saleCancel").addEventListener("click", resetSaleForm);
+
+  function editSale(id) {
+    const s = state.sales.find(function (x) { return x.id === id; });
+    if (!s) return;
+    document.getElementById("saleEditId").value = s.id;
+    document.getElementById("saleDate").value = s.date;
+    document.getElementById("saleBrand").value = s.brand;
+    document.getElementById("saleType").value = s.type;
+    document.getElementById("saleQty").value = s.qty;
+    document.getElementById("salePrice").value = s.unitPrice;
+    document.getElementById("saleChannel").value = s.channel;
+    document.getElementById("saleFees").value = s.platformFees;
+    document.getElementById("salePaid").value = s.paid;
+    document.getElementById("saleFormTitle").textContent = "Modifier la vente";
+    document.getElementById("saleSubmit").textContent = "Mettre à jour";
+    document.getElementById("saleCancel").hidden = false;
+    updateSaleStockHint();
+    document.querySelector('.tab-btn[data-tab="sales"]').click();
+  }
+
+  function deleteSale(id) {
+    if (!confirm("Supprimer cette vente ?")) return;
+    state.sales = state.sales.filter(function (s) { return s.id !== id; });
+    saveState();
+    renderAll();
+    toast("Vente supprimée.");
+  }
+
+  function renderSalesTable() {
+    buildInventory(); // attach _cogs
+    const wrap = document.getElementById("salesTable");
+    if (!state.sales.length) {
+      wrap.innerHTML = '<div class="empty">Aucune vente pour l’instant.</div>';
+      return;
+    }
+    const rows = state.sales.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).map(function (s) {
+      const qty = Math.floor(clampNonNeg(s.qty));
+      const revenue = qty * clampNonNeg(s.unitPrice);
+      const cogs = safeNum(s._cogs, 0);
+      const fees = clampNonNeg(s.platformFees);
+      const margin = revenue - cogs - fees;
+      const channelLabel = s.channel === "direct" ? "Direct" : ((state.sellers.find(function (x) { return x.id === s.channel; }) || {}).name || "–");
+      const paidBadge = s.paid === "paid"
+        ? '<span class="badge badge-ok">Payé</span>'
+        : '<span class="badge badge-warn">À encaisser</span>';
+      return "<tr><td>" + escapeHtml(s.date) + "</td><td>" + escapeHtml(s.brand) + "</td><td>" + TYPE_LABELS[s.type] +
+        "</td><td>" + qty + "</td><td>" + formatMoney(s.unitPrice) + "</td><td>" + escapeHtml(channelLabel) +
+        "</td><td>" + formatMoney(fees) + "</td><td>" + paidBadge +
+        "</td><td>" + formatMoney(cogs) + "</td><td class='" + moneyClass(margin) + "'>" + formatMoney(margin) +
+        '</td><td><button type="button" class="btn btn-sm" data-edit-s="' + s.id + '">Modifier</button> ' +
+        '<button type="button" class="btn btn-sm btn-danger" data-del-s="' + s.id + '">Supprimer</button></td></tr>';
+    }).join("");
+    wrap.innerHTML = "<table><thead><tr><th>Date</th><th>Marque</th><th>Type</th><th>Qté</th><th>Prix unit.</th><th>Canal</th><th>Frais plat.</th><th>Paiement</th><th>Coût revient</th><th>Marge</th><th></th></tr></thead><tbody>" +
+      rows + "</tbody></table>";
+    wrap.querySelectorAll("[data-edit-s]").forEach(function (b) {
+      b.addEventListener("click", function () { editSale(b.getAttribute("data-edit-s")); });
+    });
+    wrap.querySelectorAll("[data-del-s]").forEach(function (b) {
+      b.addEventListener("click", function () { deleteSale(b.getAttribute("data-del-s")); });
+    });
+  }
+
+  /* ========== SELLERS ========== */
+
+  document.getElementById("sellerForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const name = document.getElementById("sellerName").value.trim();
+    const city = document.getElementById("sellerCity").value.trim();
+    if (!name || !city) return;
+    state.sellers.push({ id: uid(), name: name, city: city });
+    document.getElementById("sellerName").value = "";
+    document.getElementById("sellerCity").value = "";
+    saveState();
+    renderAll();
+    toast("Vendeur ajouté.");
+  });
+
+  document.getElementById("transferForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const sellerId = document.getElementById("transferSeller").value;
+    const brand = document.getElementById("transferBrand").value;
+    const type = document.getElementById("transferType").value;
+    const qty = Math.max(1, Math.floor(safeNum(document.getElementById("transferQty").value, 1)));
+    if (!sellerId) {
+      toast("Ajoutez d’abord un vendeur.");
+      return;
+    }
+    const inv = buildInventory();
+    const avail = getStockAvailable(inv, brand, type, "mine");
+    if (qty > avail) {
+      toast("Stock chez vous insuffisant (" + avail + ").");
+      return;
+    }
+    state.transfers.push({
+      id: uid(),
+      date: todayStr(),
+      sellerId: sellerId,
+      brand: brand,
+      type: type,
+      qty: qty
+    });
+    saveState();
+    renderAll();
+    toast("Stock transféré.");
+  });
+
+  document.getElementById("commissionPayForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const sellerId = document.getElementById("paySeller").value;
+    const amount = clampNonNeg(document.getElementById("payAmount").value);
+    if (!sellerId || amount <= 0) {
+      toast("Indiquez un montant valide.");
+      return;
+    }
+    state.commissionPayments.push({
+      id: uid(),
+      sellerId: sellerId,
+      amount: amount,
+      date: document.getElementById("payDate").value || todayStr()
+    });
+    document.getElementById("payAmount").value = "";
+    saveState();
+    renderAll();
+    toast("Paiement enregistré.");
+  });
+
+  function deleteSeller(id) {
+    const hasSales = state.sales.some(function (s) { return s.channel === id; });
+    const hasStock = state.transfers.some(function (t) { return t.sellerId === id; });
+    if (hasSales || hasStock) {
+      if (!confirm("Ce vendeur a des ventes ou du stock. Supprimer quand même ? Les ventes resteront liées à un vendeur inconnu.")) return;
+    } else if (!confirm("Supprimer ce vendeur ?")) return;
+    state.sellers = state.sellers.filter(function (s) { return s.id !== id; });
+    saveState();
+    renderAll();
+  }
+
+  function renderSellers() {
+    buildInventory();
+    const inv = buildInventory();
+    const ranking = document.getElementById("sellersRanking");
+    const details = document.getElementById("sellersDetails");
+
+    if (!state.sellers.length) {
+      ranking.innerHTML = '<div class="empty">Aucun vendeur.</div>';
+      details.innerHTML = "";
+      return;
+    }
+
+    const stats = state.sellers.map(function (s) {
+      const st = sellerSalesStats(s.id, null);
+      return Object.assign({ seller: s }, st);
+    });
+    stats.sort(function (a, b) { return b.revenue - a.revenue; });
+
+    const byCity = {};
+    stats.forEach(function (st) {
+      const c = st.seller.city || "Sans ville";
+      if (!byCity[c]) byCity[c] = [];
+      byCity[c].push(st);
+    });
+
+    let html = "";
+    Object.keys(byCity).sort().forEach(function (city) {
+      html += '<div class="city-group"><h4>' + escapeHtml(city) + "</h4>";
+      html += "<div class='table-wrap'><table><thead><tr><th>Vendeur</th><th>Articles vendus</th><th>CA</th><th>Commission</th><th>Payée</th><th>Solde</th><th>Bénéfice entreprise</th><th>Taux effectif</th></tr></thead><tbody>";
+      byCity[city].forEach(function (st) {
+        html += "<tr><td>" + escapeHtml(st.seller.name) + "</td><td>" + st.articles + "</td><td>" + formatMoney(st.revenue) +
+          "</td><td>" + formatMoney(st.commission) + (st.capped ? ' <span class="badge badge-danger">Plafond</span>' : "") +
+          "</td><td>" + formatMoney(st.paid) + "</td><td>" + formatMoney(st.due) +
+          "</td><td class='" + moneyClass(st.companyProfit) + "'>" + formatMoney(st.companyProfit) +
+          "</td><td>" + formatPct(st.effectiveRate) + "</td></tr>";
+      });
+      html += "</tbody></table></div></div>";
+    });
+    ranking.innerHTML = html;
+
+    details.innerHTML = stats.map(function (st) {
+      const s = st.seller;
+      const stockRows = state.settings.brands.map(function (brand) {
+        return TYPES.map(function (type) {
+          const b = inv[stockKey(brand, type)];
+          const q = b && b.bySeller[s.id] ? b.bySeller[s.id] : 0;
+          const bought = state.transfers.filter(function (t) { return t.sellerId === s.id && t.brand === brand && t.type === type; })
+            .reduce(function (a, t) { return a + Math.floor(clampNonNeg(t.qty)); }, 0);
+          const sold = state.sales.filter(function (x) { return x.channel === s.id && x.brand === brand && x.type === type; })
+            .reduce(function (a, x) { return a + Math.floor(clampNonNeg(x.qty)); }, 0);
+          if (!bought && !sold && !q) return "";
+          return "<tr><td>" + escapeHtml(brand) + "</td><td>" + TYPE_LABELS[type] + "</td><td>" + bought + "</td><td>" + sold + "</td><td>" + q + "</td></tr>";
+        }).join("");
+      }).join("");
+
+      const nextTxt = st.nextTierGap == null ? "– (dernier palier ou taux fixe)" : st.nextTierGap + " article(s)";
+      const capAlert = st.capped
+        ? '<div class="alert alert-danger">Attention : la commission (' + formatPct(st.effectiveRate) + ") dépasse le plafond de " + formatPct(state.settings.commissionCap) + " de la marge.</div>"
+        : "";
+
+      const bar = st.margin > 0
+        ? Math.min(100, (st.commission / st.margin) * 100)
+        : 0;
+
+      return '<div class="subcard" style="margin-bottom:0.75rem"><h3 style="margin:0 0 0.5rem">' + escapeHtml(s.name) +
+        ' <span class="muted">· ' + escapeHtml(s.city) + '</span> ' +
+        '<button type="button" class="btn btn-sm btn-danger" data-del-seller="' + s.id + '">Supprimer</button></h3>' +
+        capAlert +
+        '<div class="grid-kpi">' +
+        kpiHtml("Articles vendus", String(st.articles)) +
+        kpiHtml("CA généré", formatMoney(st.revenue)) +
+        kpiHtml("Marge brute", formatMoney(st.margin)) +
+        kpiHtml("Commission totale", formatMoney(st.commission)) +
+        kpiHtml("Taux moyen effectif", formatPct(st.effectiveRate)) +
+        kpiHtml("Palier actuel", escapeHtml(st.tierLabel)) +
+        kpiHtml("Avant palier suivant", nextTxt) +
+        kpiHtml("Commission payée", formatMoney(st.paid)) +
+        kpiHtml("Solde à payer", formatMoney(st.due), st.due > 0 ? "loss" : "") +
+        kpiHtml("Bénéfice net entreprise", formatMoney(st.companyProfit), st.companyProfit >= 0 ? "gain" : "loss") +
+        "</div>" +
+        '<p class="field-help" style="margin-top:0.6rem">Part de la marge versée en commission</p>' +
+        '<div class="progress' + (st.capped ? " danger" : "") + '"><span style="width:' + bar + '%"></span></div>' +
+        '<div class="table-wrap" style="margin-top:0.75rem"><table><thead><tr><th>Marque</th><th>Type</th><th>Attribué</th><th>Vendu</th><th>Restant</th></tr></thead><tbody>' +
+        (stockRows || '<tr><td colspan="5" class="muted">Pas de stock attribué</td></tr>') +
+        "</tbody></table></div></div>";
+    }).join("");
+
+    details.querySelectorAll("[data-del-seller]").forEach(function (b) {
+      b.addEventListener("click", function () { deleteSeller(b.getAttribute("data-del-seller")); });
+    });
+
+    // transfer hint
+    const hint = document.getElementById("transferHint");
+    const brand = document.getElementById("transferBrand").value;
+    const type = document.getElementById("transferType").value;
+    if (brand) {
+      const avail = getStockAvailable(inv, brand, type, "mine");
+      hint.innerHTML = '<p class="field-help">Disponible chez vous : ' + avail + " · coût estimé " + formatMoney(unitCostEstimate(inv, brand, type)) + "</p>";
+    }
+  }
+
+  ["transferBrand", "transferType"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function () {
+      const inv = buildInventory();
+      const brand = document.getElementById("transferBrand").value;
+      const type = document.getElementById("transferType").value;
+      const avail = getStockAvailable(inv, brand, type, "mine");
+      document.getElementById("transferHint").innerHTML =
+        '<p class="field-help">Disponible chez vous : ' + avail + " · coût estimé " + formatMoney(unitCostEstimate(inv, brand, type)) + "</p>";
+    });
+  });
+
+  /* ========== PARTNERS ========== */
+
+  function renderPartnersForm() {
+    const wrap = document.getElementById("partnersForm");
+    wrap.innerHTML = state.partners.map(function (p, i) {
+      return '<div class="subcard form-grid">' +
+        '<div class="field"><label>Nom</label><input type="text" data-pi="' + i + '" data-pf="name" value="' + escapeAttr(p.name) + '"></div>' +
+        '<div class="field"><label>Part (%) <span class="hint" data-tip="Pourcentage du bénéfice distribuable.">?</span></label>' +
+        '<input type="number" min="0" max="100" step="0.1" data-pi="' + i + '" data-pf="share" value="' + p.share + '"></div>' +
+        '<div class="field"><label>Apport de départ (€)</label><input type="number" min="0" step="0.01" data-pi="' + i + '" data-pf="capital" value="' + p.capital + '"></div>' +
+        '<div class="field"><label>Déjà retiré (€) <span class="hint" data-tip="Sommes déjà prélevées par cet associé.">?</span></label>' +
+        '<input type="number" min="0" step="0.01" data-pi="' + i + '" data-pf="withdrawn" value="' + p.withdrawn + '"></div>' +
+        "</div>";
+    }).join("");
+    document.getElementById("repayCapitalFirst").checked = !!state.repayCapitalFirst;
+    updatePartnersShareAlert();
+  }
+
+  function updatePartnersShareAlert() {
+    const total = state.partners.reduce(function (a, p) { return a + safeNum(p.share, 0); }, 0);
+    const box = document.getElementById("partnersShareAlert");
+    if (Math.abs(total - 100) > 0.05) {
+      box.innerHTML = '<div class="alert alert-warn">Total des parts : ' + formatNum(total) + " % (doit être 100 %).</div>";
+    } else {
+      box.innerHTML = '<div class="alert alert-info">Total des parts : 100 %.</div>';
+    }
+  }
+
+  document.getElementById("partnersForm").addEventListener("input", function (e) {
+    const t = e.target;
+    const i = Number(t.getAttribute("data-pi"));
+    const f = t.getAttribute("data-pf");
+    if (!state.partners[i] || !f) return;
+    if (f === "name") state.partners[i].name = t.value;
+    else state.partners[i][f] = clampNonNeg(t.value);
+    updatePartnersShareAlert();
+  });
+
+  document.getElementById("repayCapitalFirst").addEventListener("change", function (e) {
+    state.repayCapitalFirst = e.target.checked;
+  });
+
+  document.getElementById("savePartners").addEventListener("click", function () {
+    const total = state.partners.reduce(function (a, p) { return a + safeNum(p.share, 0); }, 0);
+    if (Math.abs(total - 100) > 0.05) {
+      toast("Ajustez les parts pour totaliser 100 %.");
+      return;
+    }
+    saveState();
+    renderPartnersResult();
+    toast("Associés enregistrés.");
+  });
+
+  function renderPartnersResult() {
+    const dash = computeDashboard(null);
+    let distributable = dash.netProfit;
+    const repay = state.repayCapitalFirst;
+    let remainingCapitalPool = 0;
+    if (repay) {
+      remainingCapitalPool = state.partners.reduce(function (a, p) {
+        return a + Math.max(0, clampNonNeg(p.capital) - clampNonNeg(p.withdrawn));
+      }, 0);
+    }
+
+    let html = '<p class="field-help">Bénéfice net (toutes périodes) : <strong>' + formatMoney(dash.netProfit) + "</strong></p>";
+    html += "<table><thead><tr><th>Associé</th><th>Part</th><th>Apport</th><th>Déjà retiré</th><th>Remb. apport</th><th>Part bénéfice</th><th>Total dû</th><th>Solde</th></tr></thead><tbody>";
+
+    let profitAfterCapital = distributable;
+    const capitalRepayments = state.partners.map(function () { return 0; });
+
+    if (repay && distributable > 0 && remainingCapitalPool > 0) {
+      const repayTotal = Math.min(distributable, remainingCapitalPool);
+      state.partners.forEach(function (p, i) {
+        const owed = Math.max(0, clampNonNeg(p.capital) - clampNonNeg(p.withdrawn));
+        capitalRepayments[i] = remainingCapitalPool > 0 ? (owed / remainingCapitalPool) * repayTotal : 0;
+      });
+      profitAfterCapital = distributable - repayTotal;
+    } else if (repay && distributable < 0) {
+      profitAfterCapital = distributable;
+    }
+
+    state.partners.forEach(function (p, i) {
+      const shareAmt = profitAfterCapital * (safeNum(p.share, 0) / 100);
+      const capitalRepay = capitalRepayments[i];
+      const totalDue = capitalRepay + shareAmt;
+      // Solde = ce qui revient encore après retraits déjà faits (hors apport déjà compté dans withdrawn)
+      // Approche : totalDue représente la part de ce bénéfice ; le solde affiché = (apport + shareAmt historiques simplifiés)
+      // Spec: bénéfice × % = somme revenant, puis déjà retiré, puis solde.
+      // Avec option remboursement apports: on montre remb. apport + part bénéfice, solde = total dû − déjà retiré (si retraits couvrent tout)
+      const solde = totalDue; // amount from current profit still attributable; withdrawn tracked separately
+      const soldeNet = totalDue; // display entitlement from current net profit run
+      // Better solde: entitlement considering capital + profit share minus withdrawn
+      const entitlement = clampNonNeg(p.capital) + shareAmt;
+      // If capital repayment mode, capital is returned via capitalRepay from profit; entitlement from profit is capitalRepay+shareAmt
+      const displayEntitlement = repay ? (capitalRepay + shareAmt) : (safeNum(p.share, 0) / 100) * Math.max(0, distributable);
+      const displaySolde = displayEntitlement - clampNonNeg(p.withdrawn);
+      // Actually for non-repay: sum due = netProfit * share%; solde = that - withdrawn
+      const dueSimple = repay ? (capitalRepay + shareAmt) : (distributable * safeNum(p.share, 0) / 100);
+      const soldeFinal = dueSimple - clampNonNeg(p.withdrawn);
+
+      html += "<tr><td>" + escapeHtml(p.name) + "</td><td>" + formatPct(p.share) + "</td><td>" + formatMoney(p.capital) +
+        "</td><td>" + formatMoney(p.withdrawn) + "</td><td>" + formatMoney(capitalRepay) +
+        "</td><td class='" + moneyClass(repay ? shareAmt : dueSimple) + "'>" + formatMoney(repay ? shareAmt : dueSimple) +
+        "</td><td>" + formatMoney(dueSimple) + "</td><td class='" + moneyClass(soldeFinal) + "'>" + formatMoney(soldeFinal) + "</td></tr>";
+    });
+    html += "</tbody></table>";
+    if (distributable < 0) {
+      html = '<div class="alert alert-warn">Bénéfice net négatif : les parts reflètent une perte à partager.</div>' + html;
+    }
+    document.getElementById("partnersResult").innerHTML = html;
+  }
+
+  /* ========== SETTINGS ========== */
+
+  function renderSettings() {
+    const s = state.settings;
+    document.getElementById("setPriceHaut").value = s.prices.haut;
+    document.getElementById("setPriceBas").value = s.prices.bas;
+    document.getElementById("setPriceEnsemble").value = s.prices.ensemble;
+    document.getElementById("setMinOrder").value = s.minOrder;
+    document.getElementById("setFlatCommission").checked = !!s.useFlatCommission;
+    document.getElementById("setFlatRate").value = s.flatRate;
+    document.getElementById("setCap").value = s.commissionCap;
+    document.getElementById("flatRateWrap").style.display = s.useFlatCommission ? "grid" : "none";
+    document.getElementById("tiersWrap").style.display = s.useFlatCommission ? "none" : "block";
+
+    const brands = document.getElementById("brandsList");
+    brands.innerHTML = s.brands.map(function (b, i) {
+      return '<div class="form-grid" style="grid-template-columns:1fr auto"><div class="field"><input type="text" data-bi="' + i + '" value="' + escapeAttr(b) + '"></div>' +
+        '<div class="field"><button type="button" class="btn btn-sm btn-danger" data-rm-brand="' + i + '">Supprimer</button></div></div>';
+    }).join("");
+    brands.querySelectorAll("input").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        const i = Number(inp.getAttribute("data-bi"));
+        state.settings.brands[i] = inp.value.trim() || state.settings.brands[i];
+      });
+    });
+    brands.querySelectorAll("[data-rm-brand]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const i = Number(btn.getAttribute("data-rm-brand"));
+        if (state.settings.brands.length <= 1) {
+          toast("Gardez au moins une marque.");
+          return;
+        }
+        state.settings.brands.splice(i, 1);
+        renderSettings();
+      });
+    });
+
+    const tiers = document.getElementById("tiersList");
+    tiers.innerHTML = s.tiers.map(function (t, i) {
+      return '<div class="subcard form-grid">' +
+        '<div class="field"><label>De (articles)</label><input type="number" min="1" step="1" data-ti="' + i + '" data-tf="from" value="' + t.from + '"></div>' +
+        '<div class="field"><label>À (vide = illimité)</label><input type="number" min="1" step="1" data-ti="' + i + '" data-tf="to" value="' + (t.to == null ? "" : t.to) + '" placeholder="∞"></div>' +
+        '<div class="field"><label>Taux (% marge)</label><input type="number" min="0" max="100" step="0.1" data-ti="' + i + '" data-tf="rate" value="' + t.rate + '"></div>' +
+        '<div class="field"><label>&nbsp;</label><button type="button" class="btn btn-sm btn-danger" data-rm-tier="' + i + '">Supprimer</button></div></div>';
+    }).join("");
+    tiers.querySelectorAll("input").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        const i = Number(inp.getAttribute("data-ti"));
+        const f = inp.getAttribute("data-tf");
+        if (f === "to") {
+          state.settings.tiers[i].to = inp.value === "" ? null : Math.floor(safeNum(inp.value, 0));
+        } else if (f === "from") {
+          state.settings.tiers[i].from = Math.max(1, Math.floor(safeNum(inp.value, 1)));
+        } else {
+          state.settings.tiers[i].rate = clampNonNeg(inp.value);
+        }
+      });
+    });
+    tiers.querySelectorAll("[data-rm-tier]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const i = Number(btn.getAttribute("data-rm-tier"));
+        if (state.settings.tiers.length <= 1) {
+          toast("Gardez au moins un palier.");
+          return;
+        }
+        state.settings.tiers.splice(i, 1);
+        renderSettings();
+      });
+    });
+  }
+
+  document.getElementById("setFlatCommission").addEventListener("change", function (e) {
+    state.settings.useFlatCommission = e.target.checked;
+    document.getElementById("flatRateWrap").style.display = e.target.checked ? "grid" : "none";
+    document.getElementById("tiersWrap").style.display = e.target.checked ? "none" : "block";
+  });
+
+  document.getElementById("addBrand").addEventListener("click", function () {
+    state.settings.brands.push("Nouvelle marque");
+    renderSettings();
+  });
+
+  document.getElementById("addTier").addEventListener("click", function () {
+    const tiers = state.settings.tiers;
+    const last = tiers[tiers.length - 1];
+    const nextFrom = last && last.to != null ? last.to + 1 : (last ? last.from + 10 : 1);
+    if (last && last.to == null) last.to = nextFrom - 1;
+    tiers.push({ from: nextFrom, to: null, rate: 40 });
+    renderSettings();
+  });
+
+  document.getElementById("saveSettings").addEventListener("click", function () {
+    state.settings.prices.haut = clampNonNeg(document.getElementById("setPriceHaut").value);
+    state.settings.prices.bas = clampNonNeg(document.getElementById("setPriceBas").value);
+    state.settings.prices.ensemble = clampNonNeg(document.getElementById("setPriceEnsemble").value);
+    state.settings.minOrder = Math.max(1, Math.floor(safeNum(document.getElementById("setMinOrder").value, 5)));
+    state.settings.flatRate = clampNonNeg(document.getElementById("setFlatRate").value);
+    state.settings.commissionCap = clampNonNeg(document.getElementById("setCap").value);
+    state.settings.useFlatCommission = document.getElementById("setFlatCommission").checked;
+    state.settings.brands = state.settings.brands.map(function (b) { return String(b).trim(); }).filter(Boolean);
+    if (!state.settings.brands.length) state.settings.brands = deepClone(DEFAULT_SETTINGS.brands);
+    saveState();
+    renderAll();
+    toast("Paramètres enregistrés.");
+  });
+
+  /* ========== DASHBOARD ========== */
+
+  function renderDashboard() {
+    const filter = getDashFilter();
+    const d = computeDashboard(filter);
+    const custom = document.getElementById("dashPeriod").value === "custom";
+    document.getElementById("dashFromWrap").hidden = !custom;
+    document.getElementById("dashToWrap").hidden = !custom;
+
+    document.getElementById("dashKpis").innerHTML =
+      kpiHtml("Chiffre d’affaires", formatMoney(d.revenue)) +
+      kpiHtml("Achats marchandise", formatMoney(d.purchaseMerch)) +
+      kpiHtml("Frais de livraison", formatMoney(d.purchaseShip)) +
+      kpiHtml("Frais de plateforme", formatMoney(d.platformFees)) +
+      kpiHtml("Commissions dues", formatMoney(d.commissionDue)) +
+      kpiHtml("Commissions payées", formatMoney(d.commissionPaid)) +
+      kpiHtml("Coût articles vendus", formatMoney(d.cogsSold)) +
+      kpiHtml("Pertes (coût)", formatMoney(d.lossesCost)) +
+      kpiHtml("Bénéfice net", formatMoney(d.netProfit), d.netProfit >= 0 ? "gain" : "loss") +
+      kpiHtml("Marge nette", d.netMarginPct == null ? "–" : formatPct(d.netMarginPct), d.netProfit >= 0 ? "gain" : "loss") +
+      kpiHtml("Articles achetés", String(d.articlesBought)) +
+      kpiHtml("Articles vendus", String(d.articlesSold)) +
+      kpiHtml("Articles en stock", String(d.articlesInStock)) +
+      kpiHtml("Valeur du stock", formatMoney(d.stockValue)) +
+      kpiHtml("Créances à encaisser", formatMoney(d.revenuePending), d.revenuePending > 0 ? "loss" : "");
+
+    document.getElementById("dashCash").innerHTML =
+      kpiHtml("Argent sorti (achats + livraisons)", formatMoney(d.cashOut), "loss") +
+      kpiHtml("Argent entré (ventes encaissées)", formatMoney(d.cashIn), "gain") +
+      kpiHtml("Écart de trésorerie", formatMoney(d.cashDiff), d.cashDiff >= 0 ? "gain" : "loss") +
+      kpiHtml("Bénéfice net (rappel)", formatMoney(d.netProfit), d.netProfit >= 0 ? "gain" : "loss");
+
+    // Sellers compare
+    const sWrap = document.getElementById("dashSellersTable");
+    if (!state.sellers.length) {
+      sWrap.innerHTML = '<div class="empty">Aucun vendeur.</div>';
+    } else {
+      const rows = state.sellers.map(function (s) {
+        const st = sellerSalesStats(s.id, filter);
+        return "<tr><td>" + escapeHtml(s.name) + "</td><td>" + escapeHtml(s.city) + "</td><td>" + st.articles +
+          "</td><td>" + formatMoney(st.revenue) + "</td><td>" + formatMoney(st.commission) +
+          "</td><td class='" + moneyClass(st.companyProfit) + "'>" + formatMoney(st.companyProfit) + "</td></tr>";
+      }).join("");
+      sWrap.innerHTML = "<table><thead><tr><th>Vendeur</th><th>Ville</th><th>Articles</th><th>CA</th><th>Commission</th><th>Bénéfice entreprise</th></tr></thead><tbody>" + rows + "</tbody></table>";
+    }
+
+    // Brands
+    const bWrap = document.getElementById("dashBrandsTable");
+    const brandMap = {};
+    (state.settings.brands || []).forEach(function (b) {
+      brandMap[b] = { revenue: 0, cogs: 0, fees: 0, sold: 0 };
+    });
+    state.sales.forEach(function (s) {
+      if (filter && !inPeriod(s.date, filter)) return;
+      if (!brandMap[s.brand]) brandMap[s.brand] = { revenue: 0, cogs: 0, fees: 0, sold: 0 };
+      const qty = Math.floor(clampNonNeg(s.qty));
+      brandMap[s.brand].revenue += qty * clampNonNeg(s.unitPrice);
+      brandMap[s.brand].cogs += safeNum(s._cogs, 0);
+      brandMap[s.brand].fees += clampNonNeg(s.platformFees);
+      brandMap[s.brand].sold += qty;
+    });
+    const bKeys = Object.keys(brandMap);
+    if (!bKeys.some(function (k) { return brandMap[k].sold > 0; }) && !state.sales.length) {
+      bWrap.innerHTML = '<div class="empty">Pas encore de ventes par marque.</div>';
+    } else {
+      const brows = bKeys.map(function (b) {
+        const x = brandMap[b];
+        const margin = x.revenue - x.cogs - x.fees;
+        return "<tr><td>" + escapeHtml(b) + "</td><td>" + x.sold + "</td><td>" + formatMoney(x.revenue) +
+          "</td><td>" + formatMoney(x.cogs) + "</td><td class='" + moneyClass(margin) + "'>" + formatMoney(margin) + "</td></tr>";
+      }).join("");
+      bWrap.innerHTML = "<table><thead><tr><th>Marque</th><th>Vendus</th><th>CA</th><th>Coût revient</th><th>Marge (hors commission)</th></tr></thead><tbody>" + brows + "</tbody></table>";
+    }
+  }
+
+  document.getElementById("dashPeriod").addEventListener("change", renderDashboard);
+  document.getElementById("dashFrom").addEventListener("change", renderDashboard);
+  document.getElementById("dashTo").addEventListener("change", renderDashboard);
+
+  /* ========== IMPORT / EXPORT / RESET ========== */
+
+  document.getElementById("btnExport").addEventListener("click", function () {
+    try {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "gestion-achat-revente-" + todayStr() + ".json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("Export téléchargé.");
+    } catch (e) {
+      toast("Échec de l’export.");
+    }
+  });
+
+  document.getElementById("btnImport").addEventListener("click", function () {
+    document.getElementById("importFile").click();
+  });
+
+  document.getElementById("importFile").addEventListener("change", function (e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed || typeof parsed !== "object") throw new Error("invalid");
+        const base = defaultState();
+        state = Object.assign(base, parsed);
+        if (!state.settings) state.settings = deepClone(DEFAULT_SETTINGS);
+        state.settings = Object.assign(deepClone(DEFAULT_SETTINGS), state.settings);
+        ["purchases", "sales", "sellers", "transfers", "losses", "commissionPayments", "ledger"].forEach(function (k) {
+          if (!Array.isArray(state[k])) state[k] = [];
+        });
+        if (!state.distribution) state.distribution = deepClone(DEFAULT_DISTRIBUTION);
+        state.distribution = Object.assign(deepClone(DEFAULT_DISTRIBUTION), state.distribution);
+        if (!Array.isArray(state.partners)) state.partners = deepClone(DEFAULT_PARTNERS);
+        saveState();
+        renderAll();
+        toast("Données importées.");
+      } catch (err) {
+        toast("Fichier JSON invalide.");
+      }
+    };
+    reader.onerror = function () { toast("Lecture du fichier impossible."); };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("btnReset").addEventListener("click", function () {
+    if (!confirm("Tout réinitialiser ? Cette action efface commandes, ventes, vendeurs et stock. Les paramètres reviendront aux valeurs par défaut.")) return;
+    if (!confirm("Confirmez une dernière fois la suppression de toutes les données.")) return;
+    state = defaultState();
+    saveState();
+    renderAll();
+    toast("Données réinitialisées.");
+  });
+
+  /* ========== DISTRIBUTION / EPARGNE LOGIC ========== */
+
+  let ledgerFilter = "all";
+
+  function distToCents(euros) {
+    return Math.round(safeNum(euros, 0) * 100);
+  }
+  function distFromCents(cents) {
+    return cents / 100;
+  }
+
+  function getDistPercents() {
+    const d = Object.assign(deepClone(DEFAULT_DISTRIBUTION), state.distribution || {});
+    return {
+      epargne: safeNum(d.epargne, 20),
+      reinvestissement: safeNum(d.reinvestissement, 50),
+      libre: safeNum(d.libre, 30)
+    };
+  }
+
+  function percentSumDist(p) {
+    return safeNum(p.epargne, 0) + safeNum(p.reinvestissement, 0) + safeNum(p.libre, 0);
+  }
+
+  function percentsValidDist(p) {
+    return Math.abs(percentSumDist(p) - 100) < 0.0001;
+  }
+
+  function splitByPercents(amountEuros, percents) {
+    const totalCents = distToCents(amountEuros);
+    const eCents = Math.round(totalCents * percents.epargne / 100);
+    const rCents = Math.round(totalCents * percents.reinvestissement / 100);
+    const lCents = totalCents - eCents - rCents;
+    return {
+      epargne: distFromCents(eCents),
+      reinvestissement: distFromCents(rCents),
+      libre: distFromCents(lCents)
+    };
+  }
+
+  function sumLedgerAmounts() {
+    const sum = { epargne: 0, reinvestissement: 0, libre: 0 };
+    (state.ledger || []).forEach(function (e) {
+      sum.epargne += safeNum(e.amounts && e.amounts.epargne, 0);
+      sum.reinvestissement += safeNum(e.amounts && e.amounts.reinvestissement, 0);
+      sum.libre += safeNum(e.amounts && e.amounts.libre, 0);
+    });
+    return {
+      epargne: distFromCents(distToCents(sum.epargne)),
+      reinvestissement: distFromCents(distToCents(sum.reinvestissement)),
+      libre: distFromCents(distToCents(sum.libre))
+    };
+  }
+
+  function isLedgerCancelled(entryId) {
+    return (state.ledger || []).some(function (e) {
+      return e.type === "annulation" && e.cancelsEntryId === entryId;
+    });
+  }
+
+  function activeDistSourceKeys() {
+    const keys = {};
+    (state.ledger || []).forEach(function (e) {
+      if (e.type === "repartition" && e.sourceKey && !isLedgerCancelled(e.id)) {
+        keys[e.sourceKey] = e.id;
+      }
+    });
+    return keys;
+  }
+
+  function savingsStatsFromLedger() {
+    let totalIn = 0, totalOut = 0;
+    (state.ledger || []).forEach(function (e) {
+      const a = safeNum(e.amounts && e.amounts.epargne, 0);
+      if (a > 0) totalIn += a;
+      if (a < 0) totalOut += -a;
+    });
+    return {
+      balance: distFromCents(distToCents(totalIn - totalOut)),
+      totalIn: distFromCents(distToCents(totalIn)),
+      totalOut: distFromCents(distToCents(totalOut))
+    };
+  }
+
+  function epargneSeriesFromLedger() {
+    const points = [];
+    let bal = 0;
+    (state.ledger || []).forEach(function (e) {
+      const a = safeNum(e.amounts && e.amounts.epargne, 0);
+      if (distToCents(a) === 0) return;
+      bal = distFromCents(distToCents(bal + a));
+      points.push({ at: e.createdAt, balance: bal });
+    });
+    return points;
+  }
+
+  function appendLedgerEntry(entry) {
+    if (!Array.isArray(state.ledger)) state.ledger = [];
+    state.ledger.push(entry);
+  }
+
+  function nowISO() {
+    return new Date().toISOString();
+  }
+
+  function formatDateTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function ledgerTypeLabel(t) {
+    const map = {
+      repartition: "Répartition",
+      retrait_epargne: "Retrait épargne",
+      retrait_reinvestissement: "Retrait réinvestissement",
+      retrait_libre: "Retrait argent libre",
+      depense_reinvestissement: "Dépense réinvestissement",
+      depense_libre: "Dépense argent libre",
+      annulation: "Annulation"
+    };
+    return map[t] || t;
+  }
+
+  function renderEpargneChart(points) {
+    const wrap = document.getElementById("distEpargneChart");
+    if (!points.length) {
+      wrap.innerHTML = '<div class="empty">Pas encore d’évolution : aucune opération sur l’épargne.</div>';
+      return;
+    }
+    const w = 680, h = 160, pad = 28;
+    const vals = points.map(function (p) { return p.balance; });
+    const minV = Math.min(0, Math.min.apply(null, vals));
+    const maxV = Math.max(Math.max.apply(null, vals), 1);
+    function x(i) {
+      if (points.length === 1) return pad + (w - 2 * pad) / 2;
+      return pad + (i / (points.length - 1)) * (w - 2 * pad);
+    }
+    function y(v) {
+      return h - pad - ((v - minV) / (maxV - minV)) * (h - 2 * pad);
+    }
+    let d = "";
+    points.forEach(function (p, i) {
+      d += (i === 0 ? "M" : "L") + x(i).toFixed(1) + " " + y(p.balance).toFixed(1) + " ";
+    });
+    const last = points[points.length - 1];
+    wrap.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Évolution épargne">' +
+      '<line x1="' + pad + '" y1="' + y(0) + '" x2="' + (w - pad) + '" y2="' + y(0) + '" stroke="#d8e0e8" />' +
+      '<path d="' + d.trim() + '" fill="none" stroke="#0d6e6e" stroke-width="2.5" />' +
+      points.map(function (p, i) {
+        return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.balance).toFixed(1) + '" r="3.5" fill="#0d6e6e" />';
+      }).join("") +
+      '<text x="' + (w - pad) + '" y="' + (y(last.balance) - 8).toFixed(1) + '" text-anchor="end" font-size="11" fill="#5c6b7a">' +
+      formatMoney(last.balance) + "</text></svg>";
+  }
+
+  function updateDistPreview() {
+    const el = document.getElementById("distPreview");
+    const amount = safeNum(document.getElementById("distAmount").value, 0);
+    const p = getDistPercents();
+    if (!(amount > 0)) {
+      el.textContent = "Saisissez un montant positif pour voir la répartition.";
+      return;
+    }
+    if (!percentsValidDist(p)) {
+      el.textContent = "Corrigez d’abord les pourcentages (somme = 100 %).";
+      return;
+    }
+    const s = splitByPercents(amount, p);
+    el.innerHTML = "Aperçu : Épargne <strong>" + formatMoney(s.epargne) +
+      "</strong> · Réinvestissement <strong>" + formatMoney(s.reinvestissement) +
+      "</strong> · Libre <strong>" + formatMoney(s.libre) + "</strong>";
+  }
+
+  function syncDistAmountFromMode() {
+    const mode = document.getElementById("distSourceMode").value;
+    const amountInput = document.getElementById("distAmount");
+    const alert = document.getElementById("distRepartAlert");
+    alert.innerHTML = "";
+    if (mode === "net") {
+      const dash = computeDashboard(null);
+      amountInput.value = dash.netProfit > 0 ? String(Math.round(dash.netProfit * 100) / 100) : "0";
+      amountInput.readOnly = true;
+      if (!(dash.netProfit > 0)) {
+        alert.innerHTML = '<div class="alert-box">Bénéfice net actuel ≤ 0 : aucune répartition possible. Enregistrez d’abord des ventes rentables.</div>';
+      } else if (activeDistSourceKeys()["net-profit-global"]) {
+        alert.innerHTML = '<div class="alert-box">Le bénéfice net global a déjà été réparti. Annulez la répartition existante pour en créer une nouvelle, ou saisissez un montant manuel distinct.</div>';
+      }
+    } else {
+      amountInput.readOnly = false;
+    }
+    updateDistPreview();
+  }
+
+  function renderDistribution() {
+    if (!state.distribution) state.distribution = deepClone(DEFAULT_DISTRIBUTION);
+    if (!Array.isArray(state.ledger)) state.ledger = [];
+
+    const bal = sumLedgerAmounts();
+    const stats = savingsStatsFromLedger();
+    const hors = distFromCents(distToCents(bal.reinvestissement + bal.libre));
+
+    document.getElementById("distBalances").innerHTML =
+      '<div class="envelope-card locked"><h3>Épargne</h3><div class="amt">' + formatMoney(bal.epargne) +
+      '</div><div class="tag">Bloquée · hors achats</div></div>' +
+      '<div class="envelope-card"><h3>Réinvestissement</h3><div class="amt">' + formatMoney(bal.reinvestissement) +
+      '</div><div class="tag">Hors épargne · prochaines commandes</div></div>' +
+      '<div class="envelope-card"><h3>Argent libre</h3><div class="amt">' + formatMoney(bal.libre) +
+      '</div><div class="tag">Hors épargne · retirable</div></div>' +
+      '<div class="envelope-card" style="grid-column:1/-1"><h3>Total hors épargne</h3><div class="amt">' + formatMoney(hors) +
+      '</div><div class="tag">Réinvestissement + argent libre</div></div>';
+
+    const p = getDistPercents();
+    document.getElementById("distPctEpargne").value = p.epargne;
+    document.getElementById("distPctReinvest").value = p.reinvestissement;
+    document.getElementById("distPctLibre").value = p.libre;
+    const sum = percentSumDist(p);
+    const pctAlert = document.getElementById("distPctAlert");
+    if (percentsValidDist(p)) {
+      pctAlert.innerHTML = '<div class="alert-box ok">Total : 100 % — prêt pour les prochaines répartitions.</div>';
+    } else {
+      pctAlert.innerHTML = '<div class="alert-box error">Total : ' + formatNum(sum) +
+        " % — écart restant : " + formatNum(100 - sum) + " %. Enregistrement bloqué.</div>";
+    }
+
+    document.getElementById("distEpargneKpis").innerHTML =
+      kpiHtml("Total épargné actuel", formatMoney(stats.balance), "gain") +
+      kpiHtml("Total versé depuis le début", formatMoney(stats.totalIn)) +
+      kpiHtml("Total retiré", formatMoney(stats.totalOut), stats.totalOut > 0 ? "loss" : "") +
+      kpiHtml("% épargne (prochaines répart.)", formatPct(p.epargne));
+
+    renderEpargneChart(epargneSeriesFromLedger());
+    syncDistAmountFromMode();
+
+    const rows = (state.ledger || []).slice().reverse().filter(function (e) {
+      if (ledgerFilter === "all") return true;
+      if (ledgerFilter === "repartition") return e.type === "repartition";
+      if (ledgerFilter === "annulation") return e.type === "annulation";
+      if (ledgerFilter === "retrait") return String(e.type).indexOf("retrait") === 0 || String(e.type).indexOf("depense") === 0;
+      return true;
+    });
+    const wrap = document.getElementById("distLedgerTable");
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="empty">Aucune opération pour l’instant.</div>';
+      return;
+    }
+    const body = rows.map(function (e) {
+      const cancelled = e.type === "repartition" && isLedgerCancelled(e.id);
+      const pct = e.percents
+        ? (formatNum(e.percents.epargne) + " / " + formatNum(e.percents.reinvestissement) + " / " + formatNum(e.percents.libre))
+        : "—";
+      let actions = "";
+      if (e.type === "repartition" && !cancelled) {
+        actions = '<button type="button" class="btn btn-sm btn-danger" data-cancel-repart="' + e.id + '">Annuler</button>';
+      } else if (cancelled) {
+        actions = "<span class=\"field-help\">Annulée</span>";
+      }
+      return "<tr>" +
+        "<td>" + formatDateTime(e.createdAt) + "</td>" +
+        "<td>" + escapeHtml(ledgerTypeLabel(e.type)) + (cancelled ? " (annulée)" : "") + "</td>" +
+        "<td>" + formatMoney(e.amounts.epargne) + "</td>" +
+        "<td>" + formatMoney(e.amounts.reinvestissement) + "</td>" +
+        "<td>" + formatMoney(e.amounts.libre) + "</td>" +
+        "<td>" + escapeHtml(pct) + "</td>" +
+        "<td>" + formatMoney(e.balancesAfter.epargne) + " / " + formatMoney(e.balancesAfter.reinvestissement) + " / " + formatMoney(e.balancesAfter.libre) + "</td>" +
+        "<td>" + escapeHtml(e.note || "—") + "</td>" +
+        "<td>" + actions + "</td>" +
+        "</tr>";
+    }).join("");
+    wrap.innerHTML = "<table><thead><tr>" +
+      "<th>Date & heure</th><th>Type</th><th>Épargne</th><th>Réinvest.</th><th>Libre</th><th>% appliqués</th><th>Soldes après</th><th>Note</th><th></th>" +
+      "</tr></thead><tbody>" + body + "</tbody></table>";
+  }
+
+  document.getElementById("saveDistPercents").addEventListener("click", function () {
+    const next = {
+      epargne: safeNum(document.getElementById("distPctEpargne").value, 0),
+      reinvestissement: safeNum(document.getElementById("distPctReinvest").value, 0),
+      libre: safeNum(document.getElementById("distPctLibre").value, 0)
+    };
+    const sum = percentSumDist(next);
+    if (!percentsValidDist(next)) {
+      document.getElementById("distPctAlert").innerHTML =
+        '<div class="alert-box error">Enregistrement bloqué. Total = ' + formatNum(sum) +
+        " % (écart " + formatNum(100 - sum) + " %). Corrigez pour atteindre 100 %.</div>";
+      toast("Pourcentages invalides.");
+      return;
+    }
+    state.distribution = next;
+    saveState();
+    renderDistribution();
+    toast("Pourcentages enregistrés (futures répartitions uniquement).");
+  });
+
+  ["distPctEpargne", "distPctReinvest", "distPctLibre"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", function () {
+      const next = {
+        epargne: safeNum(document.getElementById("distPctEpargne").value, 0),
+        reinvestissement: safeNum(document.getElementById("distPctReinvest").value, 0),
+        libre: safeNum(document.getElementById("distPctLibre").value, 0)
+      };
+      const sum = percentSumDist(next);
+      const el = document.getElementById("distPctAlert");
+      if (percentsValidDist(next)) {
+        el.innerHTML = '<div class="alert-box ok">Total : 100 %.</div>';
+      } else {
+        el.innerHTML = '<div class="alert-box error">Total : ' + formatNum(sum) + " % — écart : " + formatNum(100 - sum) + " %.</div>";
+      }
+      updateDistPreview();
+    });
+  });
+
+  document.getElementById("distSourceMode").addEventListener("change", syncDistAmountFromMode);
+  document.getElementById("distAmount").addEventListener("input", updateDistPreview);
+
+  document.getElementById("btnDistribute").addEventListener("click", function () {
+    const alert = document.getElementById("distRepartAlert");
+    const p = getDistPercents();
+    if (!percentsValidDist(p)) {
+      alert.innerHTML = '<div class="alert-box error">Pourcentages invalides (somme ≠ 100 %). Enregistrement bloqué.</div>';
+      return;
+    }
+    const amount = safeNum(document.getElementById("distAmount").value, 0);
+    if (!(amount > 0)) {
+      alert.innerHTML = '<div class="alert-box error">Aucun bénéfice positif à répartir (montant ≤ 0).</div>';
+      return;
+    }
+    const mode = document.getElementById("distSourceMode").value;
+    const sourceKey = mode === "net" ? "net-profit-global" : ("manual-" + uid());
+    if (activeDistSourceKeys()[sourceKey]) {
+      alert.innerHTML = '<div class="alert-box error">Ce bénéfice a déjà été réparti. Annulez d’abord la répartition existante.</div>';
+      return;
+    }
+    const amounts = splitByPercents(amount, p);
+    const prev = sumLedgerAmounts();
+    const balancesAfter = {
+      epargne: distFromCents(distToCents(prev.epargne + amounts.epargne)),
+      reinvestissement: distFromCents(distToCents(prev.reinvestissement + amounts.reinvestissement)),
+      libre: distFromCents(distToCents(prev.libre + amounts.libre))
+    };
+    appendLedgerEntry({
+      id: uid(),
+      createdAt: nowISO(),
+      type: "repartition",
+      amounts: amounts,
+      percents: deepClone(p),
+      sourceAmount: distFromCents(distToCents(amount)),
+      balancesAfter: balancesAfter,
+      note: (document.getElementById("distNote").value || "").trim(),
+      sourceKey: sourceKey,
+      cancelsEntryId: null
+    });
+    saveState();
+    document.getElementById("distNote").value = "";
+    renderDistribution();
+    toast("Bénéfice réparti.");
+  });
+
+  document.getElementById("distWithdrawEnvelope").addEventListener("change", function () {
+    const env = document.getElementById("distWithdrawEnvelope").value;
+    const kind = document.getElementById("distWithdrawKind");
+    if (env === "epargne") {
+      kind.value = "retrait";
+      kind.disabled = true;
+    } else {
+      kind.disabled = false;
+    }
+  });
+
+  document.getElementById("btnWithdraw").addEventListener("click", function () {
+    const alert = document.getElementById("distWithdrawAlert");
+    const envelope = document.getElementById("distWithdrawEnvelope").value;
+    const kind = document.getElementById("distWithdrawKind").value;
+    const amount = distFromCents(distToCents(safeNum(document.getElementById("distWithdrawAmount").value, 0)));
+    const note = (document.getElementById("distWithdrawNote").value || "").trim();
+    alert.innerHTML = "";
+    if (!(amount > 0)) {
+      alert.innerHTML = '<div class="alert-box error">Indiquez un montant positif.</div>';
+      return;
+    }
+    if (envelope === "epargne" && !note) {
+      alert.innerHTML = '<div class="alert-box error">Motif obligatoire pour un retrait d’épargne.</div>';
+      return;
+    }
+    const prev = sumLedgerAmounts();
+    if (distToCents(prev[envelope]) < distToCents(amount)) {
+      alert.innerHTML = '<div class="alert-box error">Solde insuffisant (' + formatMoney(prev[envelope]) + " disponible).</div>";
+      return;
+    }
+    if (envelope === "epargne") {
+      if (!confirm("Confirmer le retrait exceptionnel de " + formatMoney(amount) + " sur l’épargne ?\\nMotif : " + note)) return;
+    }
+    const amounts = { epargne: 0, reinvestissement: 0, libre: 0 };
+    amounts[envelope] = -amount;
+    const balancesAfter = {
+      epargne: distFromCents(distToCents(prev.epargne + amounts.epargne)),
+      reinvestissement: distFromCents(distToCents(prev.reinvestissement + amounts.reinvestissement)),
+      libre: distFromCents(distToCents(prev.libre + amounts.libre))
+    };
+    let type = "retrait_libre";
+    if (envelope === "epargne") type = "retrait_epargne";
+    else if (envelope === "reinvestissement") type = kind === "depense" ? "depense_reinvestissement" : "retrait_reinvestissement";
+    else type = kind === "depense" ? "depense_libre" : "retrait_libre";
+    appendLedgerEntry({
+      id: uid(),
+      createdAt: nowISO(),
+      type: type,
+      amounts: amounts,
+      percents: null,
+      sourceAmount: amount,
+      balancesAfter: balancesAfter,
+      note: note,
+      sourceKey: null,
+      cancelsEntryId: null
+    });
+    saveState();
+    document.getElementById("distWithdrawAmount").value = "";
+    document.getElementById("distWithdrawNote").value = "";
+    renderDistribution();
+    toast("Opération enregistrée.");
+  });
+
+  document.getElementById("distLedgerFilters").addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-ledger-filter]");
+    if (!btn) return;
+    ledgerFilter = btn.getAttribute("data-ledger-filter");
+    document.querySelectorAll("#distLedgerFilters .btn").forEach(function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    renderDistribution();
+  });
+
+  document.getElementById("distLedgerTable").addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-cancel-repart]");
+    if (!btn) return;
+    const entryId = btn.getAttribute("data-cancel-repart");
+    const target = (state.ledger || []).find(function (x) { return x.id === entryId; });
+    if (!target || target.type !== "repartition") return;
+    if (isLedgerCancelled(entryId)) {
+      toast("Déjà annulée.");
+      return;
+    }
+    if (!confirm("Annuler cette répartition ? Une ligne inverse sera ajoutée au journal (aucune suppression).")) return;
+    const prev = sumLedgerAmounts();
+    const amounts = {
+      epargne: -safeNum(target.amounts.epargne, 0),
+      reinvestissement: -safeNum(target.amounts.reinvestissement, 0),
+      libre: -safeNum(target.amounts.libre, 0)
+    };
+    const balancesAfter = {
+      epargne: distFromCents(distToCents(prev.epargne + amounts.epargne)),
+      reinvestissement: distFromCents(distToCents(prev.reinvestissement + amounts.reinvestissement)),
+      libre: distFromCents(distToCents(prev.libre + amounts.libre))
+    };
+    if (balancesAfter.epargne < -0.0001 || balancesAfter.reinvestissement < -0.0001 || balancesAfter.libre < -0.0001) {
+      toast("Annulation impossible : soldes insuffisants (retraits déjà effectués).");
+      return;
+    }
+    appendLedgerEntry({
+      id: uid(),
+      createdAt: nowISO(),
+      type: "annulation",
+      amounts: amounts,
+      percents: target.percents ? deepClone(target.percents) : null,
+      sourceAmount: target.sourceAmount,
+      balancesAfter: balancesAfter,
+      note: "Annulation de répartition",
+      sourceKey: null,
+      cancelsEntryId: entryId
+    });
+    saveState();
+    renderDistribution();
+    toast("Répartition annulée.");
+  });
+
+
+  /* ========== RENDER ALL ========== */
+
+  function renderAll() {
+    fillBrandSelects();
+    fillSellerSelects();
+    renderPurchasesTable();
+    renderStock();
+    renderLossesTable();
+    renderSalesTable();
+    renderSellers();
+    renderPartnersForm();
+    renderPartnersResult();
+    renderSettings();
+    renderDashboard();
+    renderDistribution();
+    updateSaleStockHint();
+    document.getElementById("minOrderHint").textContent = String(state.settings.minOrder);
+  }
+
+  /* ========== INIT ========== */
+
+  loadState();
+  document.getElementById("purchaseDate").value = todayStr();
+  document.getElementById("saleDate").value = todayStr();
+  document.getElementById("lossDate").value = todayStr();
+  document.getElementById("payDate").value = todayStr();
+  purchaseLineData = [defaultPurchaseLine()];
+  renderPurchaseLines();
+  document.getElementById("distWithdrawEnvelope").dispatchEvent(new Event("change"));
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
