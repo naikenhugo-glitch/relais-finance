@@ -1,3 +1,4 @@
+import { DEFAULT_DISTRIBUTION } from "./distribution";
 import type {
   AppState,
   Brand,
@@ -21,7 +22,6 @@ export function flattenOrders(orders: Order[]): PurchaseFlat[] {
       type: line.type,
       quantity: line.quantity,
       unitBuyPrice: line.unitBuyPrice,
-      // shipping attributed only once per order (first line) for totals
       shippingCost: index === 0 ? order.shippingCost : 0,
       unitSellPrice: line.unitSellPrice,
     })),
@@ -52,7 +52,7 @@ export function createEmptyLine(
     id: uid(),
     brand,
     type,
-    quantity: type === "ensemble" ? 1 : 1,
+    quantity: 1,
     unitBuyPrice: settings.defaultBuyPrices[type],
     unitSellPrice: settings.defaultSellPrices[type],
   };
@@ -76,59 +76,62 @@ export function migrateLegacyPurchases(purchases: LegacyPurchase[]): Order[] {
   }));
 }
 
+function mergeSettings(
+  empty: Settings,
+  partial?: Partial<Settings>,
+): Settings {
+  return {
+    ...empty,
+    ...partial,
+    defaultBuyPrices: {
+      ...empty.defaultBuyPrices,
+      ...partial?.defaultBuyPrices,
+    },
+    defaultSellPrices: {
+      ...empty.defaultSellPrices,
+      ...partial?.defaultSellPrices,
+    },
+    commissionTiers:
+      partial?.commissionTiers?.length
+        ? partial.commissionTiers
+        : empty.commissionTiers,
+    distribution: {
+      ...DEFAULT_DISTRIBUTION,
+      ...empty.distribution,
+      ...partial?.distribution,
+    },
+  };
+}
+
 export function normalizeState(raw: unknown, empty: AppState): AppState {
   if (!raw || typeof raw !== "object") return empty;
-  const value = raw as Partial<AppState> & Partial<LegacyAppState>;
+  const value = raw as Partial<AppState> &
+    Partial<LegacyAppState> & { ledger?: AppState["ledger"] };
 
-  if (value.version === 2 && Array.isArray(value.orders)) {
+  if (
+    (value.version === 2 || value.version === 3) &&
+    Array.isArray(value.orders)
+  ) {
     return {
-      version: 2,
+      version: 3,
       orders: value.orders,
       sellers: value.sellers ?? [],
       allocations: value.allocations ?? [],
       sales: value.sales ?? [],
-      settings: {
-        ...empty.settings,
-        ...value.settings,
-        defaultBuyPrices: {
-          ...empty.settings.defaultBuyPrices,
-          ...value.settings?.defaultBuyPrices,
-        },
-        defaultSellPrices: {
-          ...empty.settings.defaultSellPrices,
-          ...value.settings?.defaultSellPrices,
-        },
-        commissionTiers:
-          value.settings?.commissionTiers?.length
-            ? value.settings.commissionTiers
-            : empty.settings.commissionTiers,
-      },
+      ledger: Array.isArray(value.ledger) ? value.ledger : [],
+      settings: mergeSettings(empty.settings, value.settings),
     };
   }
 
   if (value.version === 1 && Array.isArray(value.purchases)) {
     return {
-      version: 2,
+      version: 3,
       orders: migrateLegacyPurchases(value.purchases),
       sellers: value.sellers ?? [],
       allocations: value.allocations ?? [],
       sales: value.sales ?? [],
-      settings: {
-        ...empty.settings,
-        ...value.settings,
-        defaultBuyPrices: {
-          ...empty.settings.defaultBuyPrices,
-          ...value.settings?.defaultBuyPrices,
-        },
-        defaultSellPrices: {
-          ...empty.settings.defaultSellPrices,
-          ...value.settings?.defaultSellPrices,
-        },
-        commissionTiers:
-          value.settings?.commissionTiers?.length
-            ? value.settings.commissionTiers
-            : empty.settings.commissionTiers,
-      },
+      ledger: [],
+      settings: mergeSettings(empty.settings, value.settings),
     };
   }
 

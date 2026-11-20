@@ -358,6 +358,78 @@ tr:hover td { background: #fafbfc; }
   overflow: hidden; clip: rect(0,0,0,0);
   border: 0;
 }
+
+.envelope-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 720px) {
+  .envelope-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.envelope-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem;
+  background: #fff;
+}
+.envelope-card.locked {
+  background: #f3f6f8;
+  border-style: dashed;
+}
+.envelope-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+.envelope-card .amt {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.envelope-card .tag {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--accent-soft);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+.envelope-card.locked .tag { background: #e8edf2; }
+.chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: #fafbfc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+.chart-wrap svg { display: block; width: 100%; max-width: 720px; height: 180px; }
+.ledger-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.ledger-filters button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.alert-box {
+  padding: 0.7rem 0.85rem;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid #f0e0b0;
+  font-size: 0.9rem;
+}
+.alert-box.error {
+  background: var(--loss-bg);
+  color: var(--loss);
+  border-color: #f0c4c0;
+}
+.alert-box.ok {
+  background: var(--gain-bg);
+  color: var(--gain);
+  border-color: #b7e0c8;
+}
+
 </style>
 </head>
 <body>
@@ -380,6 +452,7 @@ tr:hover td { background: #fafbfc; }
   <button type="button" class="tab-btn" data-tab="sales">Ventes</button>
   <button type="button" class="tab-btn" data-tab="sellers">Vendeurs</button>
   <button type="button" class="tab-btn" data-tab="partners">Associés</button>
+  <button type="button" class="tab-btn" data-tab="distribution">Répartition &amp; épargne</button>
   <button type="button" class="tab-btn" data-tab="settings">Paramètres</button>
 </nav>
 
@@ -699,6 +772,121 @@ tr:hover td { background: #fafbfc; }
     </div>
   </section>
 
+
+  <!-- DISTRIBUTION / EPARGNE -->
+  <section id="panel-distribution" class="panel" role="tabpanel">
+    <p class="section-intro">Répartissez chaque bénéfice net en trois enveloppes séparées : <strong>Épargne</strong> (bloquée), <strong>Réinvestissement</strong> (prochaines commandes) et <strong>Argent libre</strong>. Les soldes démarrent à 0&nbsp;€. Aucune donnée fictive.</p>
+
+    <div class="card">
+      <h2>Soldes des enveloppes</h2>
+      <div class="envelope-grid" id="distBalances"></div>
+      <p class="field-help" style="margin-top:0.75rem">L’épargne n’est jamais utilisable pour des achats ni comptée dans l’argent libre. Réinvestissement et argent libre sont affichés « hors épargne ».</p>
+    </div>
+
+    <div class="card">
+      <h2>Pourcentages de répartition</h2>
+      <p class="field-help">Modifiables à tout moment. Un changement s’applique uniquement aux <strong>prochaines</strong> répartitions. La somme doit être exactement 100&nbsp;%.</p>
+      <div id="distPctAlert"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Épargne (%)</label>
+          <input type="number" id="distPctEpargne" min="0" max="100" step="0.01">
+        </div>
+        <div class="field">
+          <label>Réinvestissement (%)</label>
+          <input type="number" id="distPctReinvest" min="0" max="100" step="0.01">
+        </div>
+        <div class="field">
+          <label>Argent libre (%)</label>
+          <input type="number" id="distPctLibre" min="0" max="100" step="0.01">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="saveDistPercents">Enregistrer les pourcentages</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Répartir un bénéfice</h2>
+      <p class="field-help">Action explicite uniquement. Chaque bénéfice (identifié) ne peut être réparti qu’une seule fois. Calcul en centimes : épargne et réinvestissement arrondis, l’argent libre reçoit le reliquat.</p>
+      <div id="distRepartAlert"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Source du bénéfice</label>
+          <select id="distSourceMode">
+            <option value="net">Bénéfice net actuel (proposition)</option>
+            <option value="manual">Montant saisi manuellement</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Montant à répartir (€)</label>
+          <input type="number" id="distAmount" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Note (facultatif)</label>
+          <input type="text" id="distNote" placeholder="Ex. clôture mars">
+        </div>
+      </div>
+      <p class="field-help" id="distPreview"></p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="btnDistribute">Répartir un bénéfice</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tableau de bord épargne</h2>
+      <div class="grid-kpi" id="distEpargneKpis"></div>
+      <h3 style="margin-top:1rem;font-size:1rem">Évolution du solde d’épargne</h3>
+      <div class="chart-wrap" id="distEpargneChart"></div>
+    </div>
+
+    <div class="card">
+      <h2>Retrait ou dépense</h2>
+      <p class="field-help">Retrait d’épargne : manuel uniquement, motif obligatoire, confirmation. Aucun retrait automatique. Soldes jamais négatifs.</p>
+      <div id="distWithdrawAlert"></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Enveloppe</label>
+          <select id="distWithdrawEnvelope">
+            <option value="epargne">Épargne (retrait exceptionnel)</option>
+            <option value="reinvestissement">Réinvestissement</option>
+            <option value="libre">Argent libre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Type d’opération</label>
+          <select id="distWithdrawKind">
+            <option value="retrait">Retrait</option>
+            <option value="depense">Dépense</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Montant (€)</label>
+          <input type="number" id="distWithdrawAmount" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Motif</label>
+          <input type="text" id="distWithdrawNote" placeholder="Obligatoire pour l’épargne">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-danger" id="btnWithdraw">Enregistrer retrait / dépense</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Historique (journal)</h2>
+      <p class="field-help">Journal en ajout seul : aucune ligne n’est supprimée ni modifiée. Une annulation crée une ligne inverse.</p>
+      <div class="ledger-filters" id="distLedgerFilters">
+        <button type="button" class="btn btn-sm active" data-ledger-filter="all">Tout</button>
+        <button type="button" class="btn btn-sm" data-ledger-filter="repartition">Répartitions</button>
+        <button type="button" class="btn btn-sm" data-ledger-filter="retrait">Retraits / dépenses</button>
+        <button type="button" class="btn btn-sm" data-ledger-filter="annulation">Annulations</button>
+      </div>
+      <div class="table-wrap" id="distLedgerTable"></div>
+    </div>
+  </section>
+
   <!-- SETTINGS -->
   <section id="panel-settings" class="panel" role="tabpanel">
     <p class="section-intro">Paramètres par défaut : prix d’achat, minimum de commande, marques, paliers de commission et plafond.</p>
@@ -789,6 +977,12 @@ tr:hover td { background: #fafbfc; }
     ]
   };
 
+  const DEFAULT_DISTRIBUTION = {
+    epargne: 20,
+    reinvestissement: 50,
+    libre: 30
+  };
+
   const DEFAULT_PARTNERS = [
     { id: "p1", name: "Associé 1", share: 50, capital: 0, withdrawn: 0 },
     { id: "p2", name: "Associé 2", share: 50, capital: 0, withdrawn: 0 }
@@ -855,7 +1049,9 @@ tr:hover td { background: #fafbfc; }
       sellers: [],
       transfers: [],
       losses: [],
-      commissionPayments: []
+      commissionPayments: [],
+      distribution: deepClone(DEFAULT_DISTRIBUTION),
+      ledger: []
     };
   }
 
@@ -892,9 +1088,11 @@ tr:hover td { background: #fafbfc; }
       if (!Array.isArray(state.partners) || state.partners.length < 1) {
         state.partners = deepClone(DEFAULT_PARTNERS);
       }
-      ["purchases", "sales", "sellers", "transfers", "losses", "commissionPayments"].forEach(function (k) {
+      ["purchases", "sales", "sellers", "transfers", "losses", "commissionPayments", "ledger"].forEach(function (k) {
         if (!Array.isArray(state[k])) state[k] = [];
       });
+      if (!state.distribution) state.distribution = deepClone(DEFAULT_DISTRIBUTION);
+      state.distribution = Object.assign(deepClone(DEFAULT_DISTRIBUTION), state.distribution);
     } catch (e) {
       toast("Données locales illisibles : démarrage à vide.");
       state = defaultState();
@@ -2406,9 +2604,11 @@ tr:hover td { background: #fafbfc; }
         state = Object.assign(base, parsed);
         if (!state.settings) state.settings = deepClone(DEFAULT_SETTINGS);
         state.settings = Object.assign(deepClone(DEFAULT_SETTINGS), state.settings);
-        ["purchases", "sales", "sellers", "transfers", "losses", "commissionPayments"].forEach(function (k) {
+        ["purchases", "sales", "sellers", "transfers", "losses", "commissionPayments", "ledger"].forEach(function (k) {
           if (!Array.isArray(state[k])) state[k] = [];
         });
+        if (!state.distribution) state.distribution = deepClone(DEFAULT_DISTRIBUTION);
+        state.distribution = Object.assign(deepClone(DEFAULT_DISTRIBUTION), state.distribution);
         if (!Array.isArray(state.partners)) state.partners = deepClone(DEFAULT_PARTNERS);
         saveState();
         renderAll();
@@ -2430,6 +2630,485 @@ tr:hover td { background: #fafbfc; }
     toast("Données réinitialisées.");
   });
 
+  /* ========== DISTRIBUTION / EPARGNE LOGIC ========== */
+
+  let ledgerFilter = "all";
+
+  function distToCents(euros) {
+    return Math.round(safeNum(euros, 0) * 100);
+  }
+  function distFromCents(cents) {
+    return cents / 100;
+  }
+
+  function getDistPercents() {
+    const d = Object.assign(deepClone(DEFAULT_DISTRIBUTION), state.distribution || {});
+    return {
+      epargne: safeNum(d.epargne, 20),
+      reinvestissement: safeNum(d.reinvestissement, 50),
+      libre: safeNum(d.libre, 30)
+    };
+  }
+
+  function percentSumDist(p) {
+    return safeNum(p.epargne, 0) + safeNum(p.reinvestissement, 0) + safeNum(p.libre, 0);
+  }
+
+  function percentsValidDist(p) {
+    return Math.abs(percentSumDist(p) - 100) < 0.0001;
+  }
+
+  function splitByPercents(amountEuros, percents) {
+    const totalCents = distToCents(amountEuros);
+    const eCents = Math.round(totalCents * percents.epargne / 100);
+    const rCents = Math.round(totalCents * percents.reinvestissement / 100);
+    const lCents = totalCents - eCents - rCents;
+    return {
+      epargne: distFromCents(eCents),
+      reinvestissement: distFromCents(rCents),
+      libre: distFromCents(lCents)
+    };
+  }
+
+  function sumLedgerAmounts() {
+    const sum = { epargne: 0, reinvestissement: 0, libre: 0 };
+    (state.ledger || []).forEach(function (e) {
+      sum.epargne += safeNum(e.amounts && e.amounts.epargne, 0);
+      sum.reinvestissement += safeNum(e.amounts && e.amounts.reinvestissement, 0);
+      sum.libre += safeNum(e.amounts && e.amounts.libre, 0);
+    });
+    return {
+      epargne: distFromCents(distToCents(sum.epargne)),
+      reinvestissement: distFromCents(distToCents(sum.reinvestissement)),
+      libre: distFromCents(distToCents(sum.libre))
+    };
+  }
+
+  function isLedgerCancelled(entryId) {
+    return (state.ledger || []).some(function (e) {
+      return e.type === "annulation" && e.cancelsEntryId === entryId;
+    });
+  }
+
+  function activeDistSourceKeys() {
+    const keys = {};
+    (state.ledger || []).forEach(function (e) {
+      if (e.type === "repartition" && e.sourceKey && !isLedgerCancelled(e.id)) {
+        keys[e.sourceKey] = e.id;
+      }
+    });
+    return keys;
+  }
+
+  function savingsStatsFromLedger() {
+    let totalIn = 0, totalOut = 0;
+    (state.ledger || []).forEach(function (e) {
+      const a = safeNum(e.amounts && e.amounts.epargne, 0);
+      if (a > 0) totalIn += a;
+      if (a < 0) totalOut += -a;
+    });
+    return {
+      balance: distFromCents(distToCents(totalIn - totalOut)),
+      totalIn: distFromCents(distToCents(totalIn)),
+      totalOut: distFromCents(distToCents(totalOut))
+    };
+  }
+
+  function epargneSeriesFromLedger() {
+    const points = [];
+    let bal = 0;
+    (state.ledger || []).forEach(function (e) {
+      const a = safeNum(e.amounts && e.amounts.epargne, 0);
+      if (distToCents(a) === 0) return;
+      bal = distFromCents(distToCents(bal + a));
+      points.push({ at: e.createdAt, balance: bal });
+    });
+    return points;
+  }
+
+  function appendLedgerEntry(entry) {
+    if (!Array.isArray(state.ledger)) state.ledger = [];
+    state.ledger.push(entry);
+  }
+
+  function nowISO() {
+    return new Date().toISOString();
+  }
+
+  function formatDateTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function ledgerTypeLabel(t) {
+    const map = {
+      repartition: "Répartition",
+      retrait_epargne: "Retrait épargne",
+      retrait_reinvestissement: "Retrait réinvestissement",
+      retrait_libre: "Retrait argent libre",
+      depense_reinvestissement: "Dépense réinvestissement",
+      depense_libre: "Dépense argent libre",
+      annulation: "Annulation"
+    };
+    return map[t] || t;
+  }
+
+  function renderEpargneChart(points) {
+    const wrap = document.getElementById("distEpargneChart");
+    if (!points.length) {
+      wrap.innerHTML = '<div class="empty">Pas encore d’évolution : aucune opération sur l’épargne.</div>';
+      return;
+    }
+    const w = 680, h = 160, pad = 28;
+    const vals = points.map(function (p) { return p.balance; });
+    const minV = Math.min(0, Math.min.apply(null, vals));
+    const maxV = Math.max(Math.max.apply(null, vals), 1);
+    function x(i) {
+      if (points.length === 1) return pad + (w - 2 * pad) / 2;
+      return pad + (i / (points.length - 1)) * (w - 2 * pad);
+    }
+    function y(v) {
+      return h - pad - ((v - minV) / (maxV - minV)) * (h - 2 * pad);
+    }
+    let d = "";
+    points.forEach(function (p, i) {
+      d += (i === 0 ? "M" : "L") + x(i).toFixed(1) + " " + y(p.balance).toFixed(1) + " ";
+    });
+    const last = points[points.length - 1];
+    wrap.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Évolution épargne">' +
+      '<line x1="' + pad + '" y1="' + y(0) + '" x2="' + (w - pad) + '" y2="' + y(0) + '" stroke="#d8e0e8" />' +
+      '<path d="' + d.trim() + '" fill="none" stroke="#0d6e6e" stroke-width="2.5" />' +
+      points.map(function (p, i) {
+        return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.balance).toFixed(1) + '" r="3.5" fill="#0d6e6e" />';
+      }).join("") +
+      '<text x="' + (w - pad) + '" y="' + (y(last.balance) - 8).toFixed(1) + '" text-anchor="end" font-size="11" fill="#5c6b7a">' +
+      formatMoney(last.balance) + "</text></svg>";
+  }
+
+  function updateDistPreview() {
+    const el = document.getElementById("distPreview");
+    const amount = safeNum(document.getElementById("distAmount").value, 0);
+    const p = getDistPercents();
+    if (!(amount > 0)) {
+      el.textContent = "Saisissez un montant positif pour voir la répartition.";
+      return;
+    }
+    if (!percentsValidDist(p)) {
+      el.textContent = "Corrigez d’abord les pourcentages (somme = 100 %).";
+      return;
+    }
+    const s = splitByPercents(amount, p);
+    el.innerHTML = "Aperçu : Épargne <strong>" + formatMoney(s.epargne) +
+      "</strong> · Réinvestissement <strong>" + formatMoney(s.reinvestissement) +
+      "</strong> · Libre <strong>" + formatMoney(s.libre) + "</strong>";
+  }
+
+  function syncDistAmountFromMode() {
+    const mode = document.getElementById("distSourceMode").value;
+    const amountInput = document.getElementById("distAmount");
+    const alert = document.getElementById("distRepartAlert");
+    alert.innerHTML = "";
+    if (mode === "net") {
+      const dash = computeDashboard(null);
+      amountInput.value = dash.netProfit > 0 ? String(Math.round(dash.netProfit * 100) / 100) : "0";
+      amountInput.readOnly = true;
+      if (!(dash.netProfit > 0)) {
+        alert.innerHTML = '<div class="alert-box">Bénéfice net actuel ≤ 0 : aucune répartition possible. Enregistrez d’abord des ventes rentables.</div>';
+      } else if (activeDistSourceKeys()["net-profit-global"]) {
+        alert.innerHTML = '<div class="alert-box">Le bénéfice net global a déjà été réparti. Annulez la répartition existante pour en créer une nouvelle, ou saisissez un montant manuel distinct.</div>';
+      }
+    } else {
+      amountInput.readOnly = false;
+    }
+    updateDistPreview();
+  }
+
+  function renderDistribution() {
+    if (!state.distribution) state.distribution = deepClone(DEFAULT_DISTRIBUTION);
+    if (!Array.isArray(state.ledger)) state.ledger = [];
+
+    const bal = sumLedgerAmounts();
+    const stats = savingsStatsFromLedger();
+    const hors = distFromCents(distToCents(bal.reinvestissement + bal.libre));
+
+    document.getElementById("distBalances").innerHTML =
+      '<div class="envelope-card locked"><h3>Épargne</h3><div class="amt">' + formatMoney(bal.epargne) +
+      '</div><div class="tag">Bloquée · hors achats</div></div>' +
+      '<div class="envelope-card"><h3>Réinvestissement</h3><div class="amt">' + formatMoney(bal.reinvestissement) +
+      '</div><div class="tag">Hors épargne · prochaines commandes</div></div>' +
+      '<div class="envelope-card"><h3>Argent libre</h3><div class="amt">' + formatMoney(bal.libre) +
+      '</div><div class="tag">Hors épargne · retirable</div></div>' +
+      '<div class="envelope-card" style="grid-column:1/-1"><h3>Total hors épargne</h3><div class="amt">' + formatMoney(hors) +
+      '</div><div class="tag">Réinvestissement + argent libre</div></div>';
+
+    const p = getDistPercents();
+    document.getElementById("distPctEpargne").value = p.epargne;
+    document.getElementById("distPctReinvest").value = p.reinvestissement;
+    document.getElementById("distPctLibre").value = p.libre;
+    const sum = percentSumDist(p);
+    const pctAlert = document.getElementById("distPctAlert");
+    if (percentsValidDist(p)) {
+      pctAlert.innerHTML = '<div class="alert-box ok">Total : 100 % — prêt pour les prochaines répartitions.</div>';
+    } else {
+      pctAlert.innerHTML = '<div class="alert-box error">Total : ' + formatNum(sum) +
+        " % — écart restant : " + formatNum(100 - sum) + " %. Enregistrement bloqué.</div>";
+    }
+
+    document.getElementById("distEpargneKpis").innerHTML =
+      kpiHtml("Total épargné actuel", formatMoney(stats.balance), "gain") +
+      kpiHtml("Total versé depuis le début", formatMoney(stats.totalIn)) +
+      kpiHtml("Total retiré", formatMoney(stats.totalOut), stats.totalOut > 0 ? "loss" : "") +
+      kpiHtml("% épargne (prochaines répart.)", formatPct(p.epargne));
+
+    renderEpargneChart(epargneSeriesFromLedger());
+    syncDistAmountFromMode();
+
+    const rows = (state.ledger || []).slice().reverse().filter(function (e) {
+      if (ledgerFilter === "all") return true;
+      if (ledgerFilter === "repartition") return e.type === "repartition";
+      if (ledgerFilter === "annulation") return e.type === "annulation";
+      if (ledgerFilter === "retrait") return String(e.type).indexOf("retrait") === 0 || String(e.type).indexOf("depense") === 0;
+      return true;
+    });
+    const wrap = document.getElementById("distLedgerTable");
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="empty">Aucune opération pour l’instant.</div>';
+      return;
+    }
+    const body = rows.map(function (e) {
+      const cancelled = e.type === "repartition" && isLedgerCancelled(e.id);
+      const pct = e.percents
+        ? (formatNum(e.percents.epargne) + " / " + formatNum(e.percents.reinvestissement) + " / " + formatNum(e.percents.libre))
+        : "—";
+      let actions = "";
+      if (e.type === "repartition" && !cancelled) {
+        actions = '<button type="button" class="btn btn-sm btn-danger" data-cancel-repart="' + e.id + '">Annuler</button>';
+      } else if (cancelled) {
+        actions = "<span class=\"field-help\">Annulée</span>";
+      }
+      return "<tr>" +
+        "<td>" + formatDateTime(e.createdAt) + "</td>" +
+        "<td>" + escapeHtml(ledgerTypeLabel(e.type)) + (cancelled ? " (annulée)" : "") + "</td>" +
+        "<td>" + formatMoney(e.amounts.epargne) + "</td>" +
+        "<td>" + formatMoney(e.amounts.reinvestissement) + "</td>" +
+        "<td>" + formatMoney(e.amounts.libre) + "</td>" +
+        "<td>" + escapeHtml(pct) + "</td>" +
+        "<td>" + formatMoney(e.balancesAfter.epargne) + " / " + formatMoney(e.balancesAfter.reinvestissement) + " / " + formatMoney(e.balancesAfter.libre) + "</td>" +
+        "<td>" + escapeHtml(e.note || "—") + "</td>" +
+        "<td>" + actions + "</td>" +
+        "</tr>";
+    }).join("");
+    wrap.innerHTML = "<table><thead><tr>" +
+      "<th>Date & heure</th><th>Type</th><th>Épargne</th><th>Réinvest.</th><th>Libre</th><th>% appliqués</th><th>Soldes après</th><th>Note</th><th></th>" +
+      "</tr></thead><tbody>" + body + "</tbody></table>";
+  }
+
+  document.getElementById("saveDistPercents").addEventListener("click", function () {
+    const next = {
+      epargne: safeNum(document.getElementById("distPctEpargne").value, 0),
+      reinvestissement: safeNum(document.getElementById("distPctReinvest").value, 0),
+      libre: safeNum(document.getElementById("distPctLibre").value, 0)
+    };
+    const sum = percentSumDist(next);
+    if (!percentsValidDist(next)) {
+      document.getElementById("distPctAlert").innerHTML =
+        '<div class="alert-box error">Enregistrement bloqué. Total = ' + formatNum(sum) +
+        " % (écart " + formatNum(100 - sum) + " %). Corrigez pour atteindre 100 %.</div>";
+      toast("Pourcentages invalides.");
+      return;
+    }
+    state.distribution = next;
+    saveState();
+    renderDistribution();
+    toast("Pourcentages enregistrés (futures répartitions uniquement).");
+  });
+
+  ["distPctEpargne", "distPctReinvest", "distPctLibre"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", function () {
+      const next = {
+        epargne: safeNum(document.getElementById("distPctEpargne").value, 0),
+        reinvestissement: safeNum(document.getElementById("distPctReinvest").value, 0),
+        libre: safeNum(document.getElementById("distPctLibre").value, 0)
+      };
+      const sum = percentSumDist(next);
+      const el = document.getElementById("distPctAlert");
+      if (percentsValidDist(next)) {
+        el.innerHTML = '<div class="alert-box ok">Total : 100 %.</div>';
+      } else {
+        el.innerHTML = '<div class="alert-box error">Total : ' + formatNum(sum) + " % — écart : " + formatNum(100 - sum) + " %.</div>";
+      }
+      updateDistPreview();
+    });
+  });
+
+  document.getElementById("distSourceMode").addEventListener("change", syncDistAmountFromMode);
+  document.getElementById("distAmount").addEventListener("input", updateDistPreview);
+
+  document.getElementById("btnDistribute").addEventListener("click", function () {
+    const alert = document.getElementById("distRepartAlert");
+    const p = getDistPercents();
+    if (!percentsValidDist(p)) {
+      alert.innerHTML = '<div class="alert-box error">Pourcentages invalides (somme ≠ 100 %). Enregistrement bloqué.</div>';
+      return;
+    }
+    const amount = safeNum(document.getElementById("distAmount").value, 0);
+    if (!(amount > 0)) {
+      alert.innerHTML = '<div class="alert-box error">Aucun bénéfice positif à répartir (montant ≤ 0).</div>';
+      return;
+    }
+    const mode = document.getElementById("distSourceMode").value;
+    const sourceKey = mode === "net" ? "net-profit-global" : ("manual-" + uid());
+    if (activeDistSourceKeys()[sourceKey]) {
+      alert.innerHTML = '<div class="alert-box error">Ce bénéfice a déjà été réparti. Annulez d’abord la répartition existante.</div>';
+      return;
+    }
+    const amounts = splitByPercents(amount, p);
+    const prev = sumLedgerAmounts();
+    const balancesAfter = {
+      epargne: distFromCents(distToCents(prev.epargne + amounts.epargne)),
+      reinvestissement: distFromCents(distToCents(prev.reinvestissement + amounts.reinvestissement)),
+      libre: distFromCents(distToCents(prev.libre + amounts.libre))
+    };
+    appendLedgerEntry({
+      id: uid(),
+      createdAt: nowISO(),
+      type: "repartition",
+      amounts: amounts,
+      percents: deepClone(p),
+      sourceAmount: distFromCents(distToCents(amount)),
+      balancesAfter: balancesAfter,
+      note: (document.getElementById("distNote").value || "").trim(),
+      sourceKey: sourceKey,
+      cancelsEntryId: null
+    });
+    saveState();
+    document.getElementById("distNote").value = "";
+    renderDistribution();
+    toast("Bénéfice réparti.");
+  });
+
+  document.getElementById("distWithdrawEnvelope").addEventListener("change", function () {
+    const env = document.getElementById("distWithdrawEnvelope").value;
+    const kind = document.getElementById("distWithdrawKind");
+    if (env === "epargne") {
+      kind.value = "retrait";
+      kind.disabled = true;
+    } else {
+      kind.disabled = false;
+    }
+  });
+
+  document.getElementById("btnWithdraw").addEventListener("click", function () {
+    const alert = document.getElementById("distWithdrawAlert");
+    const envelope = document.getElementById("distWithdrawEnvelope").value;
+    const kind = document.getElementById("distWithdrawKind").value;
+    const amount = distFromCents(distToCents(safeNum(document.getElementById("distWithdrawAmount").value, 0)));
+    const note = (document.getElementById("distWithdrawNote").value || "").trim();
+    alert.innerHTML = "";
+    if (!(amount > 0)) {
+      alert.innerHTML = '<div class="alert-box error">Indiquez un montant positif.</div>';
+      return;
+    }
+    if (envelope === "epargne" && !note) {
+      alert.innerHTML = '<div class="alert-box error">Motif obligatoire pour un retrait d’épargne.</div>';
+      return;
+    }
+    const prev = sumLedgerAmounts();
+    if (distToCents(prev[envelope]) < distToCents(amount)) {
+      alert.innerHTML = '<div class="alert-box error">Solde insuffisant (' + formatMoney(prev[envelope]) + " disponible).</div>";
+      return;
+    }
+    if (envelope === "epargne") {
+      if (!confirm("Confirmer le retrait exceptionnel de " + formatMoney(amount) + " sur l’épargne ?\\nMotif : " + note)) return;
+    }
+    const amounts = { epargne: 0, reinvestissement: 0, libre: 0 };
+    amounts[envelope] = -amount;
+    const balancesAfter = {
+      epargne: distFromCents(distToCents(prev.epargne + amounts.epargne)),
+      reinvestissement: distFromCents(distToCents(prev.reinvestissement + amounts.reinvestissement)),
+      libre: distFromCents(distToCents(prev.libre + amounts.libre))
+    };
+    let type = "retrait_libre";
+    if (envelope === "epargne") type = "retrait_epargne";
+    else if (envelope === "reinvestissement") type = kind === "depense" ? "depense_reinvestissement" : "retrait_reinvestissement";
+    else type = kind === "depense" ? "depense_libre" : "retrait_libre";
+    appendLedgerEntry({
+      id: uid(),
+      createdAt: nowISO(),
+      type: type,
+      amounts: amounts,
+      percents: null,
+      sourceAmount: amount,
+      balancesAfter: balancesAfter,
+      note: note,
+      sourceKey: null,
+      cancelsEntryId: null
+    });
+    saveState();
+    document.getElementById("distWithdrawAmount").value = "";
+    document.getElementById("distWithdrawNote").value = "";
+    renderDistribution();
+    toast("Opération enregistrée.");
+  });
+
+  document.getElementById("distLedgerFilters").addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-ledger-filter]");
+    if (!btn) return;
+    ledgerFilter = btn.getAttribute("data-ledger-filter");
+    document.querySelectorAll("#distLedgerFilters .btn").forEach(function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    renderDistribution();
+  });
+
+  document.getElementById("distLedgerTable").addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-cancel-repart]");
+    if (!btn) return;
+    const entryId = btn.getAttribute("data-cancel-repart");
+    const target = (state.ledger || []).find(function (x) { return x.id === entryId; });
+    if (!target || target.type !== "repartition") return;
+    if (isLedgerCancelled(entryId)) {
+      toast("Déjà annulée.");
+      return;
+    }
+    if (!confirm("Annuler cette répartition ? Une ligne inverse sera ajoutée au journal (aucune suppression).")) return;
+    const prev = sumLedgerAmounts();
+    const amounts = {
+      epargne: -safeNum(target.amounts.epargne, 0),
+      reinvestissement: -safeNum(target.amounts.reinvestissement, 0),
+      libre: -safeNum(target.amounts.libre, 0)
+    };
+    const balancesAfter = {
+      epargne: distFromCents(distToCents(prev.epargne + amounts.epargne)),
+      reinvestissement: distFromCents(distToCents(prev.reinvestissement + amounts.reinvestissement)),
+      libre: distFromCents(distToCents(prev.libre + amounts.libre))
+    };
+    if (balancesAfter.epargne < -0.0001 || balancesAfter.reinvestissement < -0.0001 || balancesAfter.libre < -0.0001) {
+      toast("Annulation impossible : soldes insuffisants (retraits déjà effectués).");
+      return;
+    }
+    appendLedgerEntry({
+      id: uid(),
+      createdAt: nowISO(),
+      type: "annulation",
+      amounts: amounts,
+      percents: target.percents ? deepClone(target.percents) : null,
+      sourceAmount: target.sourceAmount,
+      balancesAfter: balancesAfter,
+      note: "Annulation de répartition",
+      sourceKey: null,
+      cancelsEntryId: entryId
+    });
+    saveState();
+    renderDistribution();
+    toast("Répartition annulée.");
+  });
+
+
   /* ========== RENDER ALL ========== */
 
   function renderAll() {
@@ -2444,6 +3123,7 @@ tr:hover td { background: #fafbfc; }
     renderPartnersResult();
     renderSettings();
     renderDashboard();
+    renderDistribution();
     updateSaleStockHint();
     document.getElementById("minOrderHint").textContent = String(state.settings.minOrder);
   }
@@ -2457,6 +3137,7 @@ tr:hover td { background: #fafbfc; }
   document.getElementById("payDate").value = todayStr();
   purchaseLineData = [defaultPurchaseLine()];
   renderPurchaseLines();
+  document.getElementById("distWithdrawEnvelope").dispatchEvent(new Event("change"));
   renderAll();
 
 })();

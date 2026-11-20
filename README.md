@@ -19,7 +19,8 @@ Les données restent dans **votre navigateur** (localStorage). Utilisez **Export
 2. **Commandes** — achats fournisseur multi-marques (min. 5 articles au total)
 3. **Ventes** — ventes propres ou via vendeurs
 4. **Vendeurs** — stock attribué, commissions progressives
-5. **Associés** — répartition des bénéfices (50/50 par défaut)
-6. **Paramètres** — prix, paliers de commission, sauvegarde
+5. **Répartition & épargne** — 3 enveloppes (épargne bloquée / réinvestissement / argent libre), journal, retraits
+6. **Associés** — répartition des bénéfices (50/50 par défaut)
+7. **Paramètres** — prix, paliers de commission, sauvegarde
 
 Aucune donnée fictive n’est préchargée.

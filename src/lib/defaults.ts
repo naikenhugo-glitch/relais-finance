@@ -1,3 +1,4 @@
+import { DEFAULT_DISTRIBUTION } from "./distribution";
 import type { AppState, Settings } from "./types";
 
 export const STORAGE_KEY = "relais-finance-v1";
@@ -35,15 +36,17 @@ export const DEFAULT_SETTINGS: Settings = {
       label: "Expert (25+ ventes)",
     },
   ],
+  distribution: { ...DEFAULT_DISTRIBUTION },
 };
 
 export function createEmptyState(): AppState {
   return {
-    version: 2,
+    version: 3,
     orders: [],
     sellers: [],
     allocations: [],
     sales: [],
+    ledger: [],
     settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as Settings,
   };
 }

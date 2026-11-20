@@ -83,15 +83,25 @@ export interface Settings {
   defaultSellPrices: Record<ItemType, number>;
   commissionBase: "ca" | "marge";
   commissionTiers: CommissionTier[];
+  /** Pourcentages futurs de répartition des bénéfices */
+  distribution: {
+    epargne: number;
+    reinvestissement: number;
+    libre: number;
+  };
 }
 
+export type { LedgerEntry } from "./distribution";
+
 export interface AppState {
-  version: 2;
+  version: 3;
   orders: Order[];
   sellers: Seller[];
   allocations: Allocation[];
   sales: Sale[];
   settings: Settings;
+  /** Journal append-only des répartitions / retraits / annulations */
+  ledger: import("./distribution").LedgerEntry[];
 }
 
 /** Ancien format v1 (migration) */

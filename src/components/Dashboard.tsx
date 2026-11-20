@@ -14,6 +14,7 @@ type NavId =
   | "purchases"
   | "sales"
   | "sellers"
+  | "distribution"
   | "partners"
   | "settings";
 

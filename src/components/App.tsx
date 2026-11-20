@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppState } from "@/lib/storage";
 import { Dashboard } from "./Dashboard";
+import { Distribution } from "./Distribution";
 import { Partners } from "./Partners";
 import { Purchases } from "./Purchases";
 import { Sales } from "./Sales";
@@ -33,6 +34,12 @@ const TABS = [
     label: "Vendeurs",
     hint: "Stock & commissions",
     group: "Activité",
+  },
+  {
+    id: "distribution",
+    label: "Épargne",
+    hint: "Répartition bénéfices",
+    group: "Suivi",
   },
   {
     id: "partners",
@@ -115,6 +122,13 @@ export function App() {
           {tab === "purchases" && <Purchases state={state} onChange={update} />}
           {tab === "sales" && <Sales state={state} onChange={update} />}
           {tab === "sellers" && <Sellers state={state} onChange={update} />}
+          {tab === "distribution" && (
+            <Distribution
+              state={state}
+              onChange={update}
+              onSettings={updateSettings}
+            />
+          )}
           {tab === "partners" && (
             <Partners state={state} onSettings={updateSettings} />
           )}

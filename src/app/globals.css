@@ -158,7 +158,7 @@ textarea {
 
 @media (min-width: 980px) {
   .nav-rail {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
 
@@ -642,6 +642,22 @@ table.data select {
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.5rem;
+}
+
+.chart-wrap svg {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: 180px;
 }
 
 .fade-in {
